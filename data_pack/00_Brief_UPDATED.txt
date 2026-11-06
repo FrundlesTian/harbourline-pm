@@ -1,0 +1,451 @@
+MA6094 Capstone Brief — Harbourline Community Hub
+
+
+
+
+  MA6094 Capstone Brief — Harbourline
+  Community Hub
+    Oct 10, 2026       · ​@Spurthi
+
+
+  At a glance
+  Your team designs, builds and defends an AI-driven project management system for one
+  deliberately incomplete project: the Harbourline Community Hub Refurbishment. The
+  system must integrate planning, risk and reporting agent modules, write into a real PM
+  tool behind a human checkpoint, and show evidence that it works.
+
+
+    Item                                            Detail
+
+    Weight                                          40% of the course grade (team and individual). The
+                                                    separate 5% individual reflection is written about
+                                                    this project.
+
+    ILOs assessed                                   2, 3, 4, 5, 6, 7, 8
+
+    Team size                                       5–6 students
+
+    Launch                                          Week 9
+
+    Build sprint                                    Week 12, in class
+
+    Submission (the only checkpoint)                Group A by 23:59 Wed 11 Nov 2026 · Group B by
+                                                    23:59 Thu 12 Nov 2026
+
+    Final presentation                              Week 13, Fri 13 Nov 2026: live demo and panel Q&A
+
+    You hand in                                     Design document, working system, evaluation
+                                                    report, governance log, presentation, peer
+                                                    evaluation
+
+    Your sponsor                                    Daniel Koh, Director, Estate Development,
+                                                    Harbourline Town Council, played by the instructor.
+                                                    Send questions at any time before you submit;
+                                                    answers are posted to every team.
+
+
+
+
+                                                                                                          Page 1 of 11
+MA6094 Capstone Brief — Harbourline Community Hub
+
+
+
+
+  The brief leaves real gaps on purpose. A strong system surfaces them and asks; a weak
+  one invents answers and builds on them. How your system handles what the brief does
+  not say is assessed throughout.
+
+
+  The project brief
+  The brief below is written as the sponsor handed it over: short, confident and incomplete.
+  Harbourline Town Council and every organisation in it are fictional. Treat the text as your
+  only source of truth until the sponsor answers your questions.
+
+
+
+
+                                                                                        Page 2 of 11
+MA6094 Capstone Brief — Harbourline Community Hub
+
+
+
+
+      From: Daniel Koh, Director, Estate Development, Harbourline Town Council Subject:
+      Harbourline Community Hub Refurbishment — project brief
+
+      Background. Harbourline Community Hub is a four-storey building completed in
+      1994, about 9,800 m² gross floor area. It houses a sports hall, multi-purpose rooms, a
+      tuition centre and a small food court, all on leases or licences. Usage has fallen, the
+      M&E plant is at end of life, and residents have asked for childcare and senior services
+      closer to home.
+
+      Objectives. Refurbish the Hub into an integrated community facility that serves
+      residents of all ages, improves accessibility and energy performance, and becomes
+      the estate's flagship shared space.
+
+      Scope. The refurbished Hub will include:
+
+           an upgraded multi-purpose sports hall
+           a new early childhood centre for about 100 children, run by our selected operator,
+           Little Harbour Learning
+           an active ageing centre, operator to be appointed
+           a community kitchen and food court refresh
+           a rooftop community garden
+           full barrier-free access, new lifts and replacement of M&E systems
+
+      Budget and time. Approved budget is S$18.5 million. Sixty per cent is funded by a
+      central grant released in tranches against milestones; grant conditions will follow.
+      Works are to complete within 22 months, with the Hub fully open by the fourth
+      quarter of 2028.
+
+      Delivery. We intend a single design-and-build contract. The Hub must remain open to
+      residents throughout the works. Residents will be consulted on the design. Little
+      Harbour Learning wishes to begin enrolment in month 18.
+
+      Reporting. The Estate Development Committee meets weekly and expects a short
+      status update. The grant body requires a monthly progress report. Our current
+      tracking is in spreadsheets.
+
+      Success. A fully operational Hub, delivered on budget, with high resident
+      satisfaction.
+
+
+
+
+                                                                                             Page 3 of 11
+MA6094 Capstone Brief — Harbourline Community Hub
+
+
+
+
+  Read it twice before you build anything. Several statements cannot all be true at once, and
+  several decisions a planner needs are missing entirely. List them, and send the ones only
+  the sponsor can answer as early as you can.
+
+
+  What your system must do
+  Your system needs six modules plus a governance layer around all of them. Each module
+  draws on a block of the course, so nothing here is new; what is new is making them work
+  as one system. The minimum column is required to pass that criterion; the stretch column
+  is where higher bands are earned.
+
+
+    Module                        Minimum                       Stretch                       Course   ILO
+                                                                                              weeks
+
+    1. Planning                   Scope statement with          Every WBS element             2–3      2
+                                  Questions for the             traceable to a scope line;
+                                  Sponsor; WBS to Level 3       anything not traceable is
+                                  with dictionary; milestone    flagged, not kept
+                                  plan with dependencies,
+                                  in relative time until the
+                                  sponsor gives dates
+
+    2. Tool                       WBS and milestones            Stable external keys          4–5      6
+    integration                   written into Jira (or Asana   from WBS codes, so a
+                                  / MS Planner) behind a        second run updates
+                                  human confirmation;           rather than duplicates
+                                  system reads the board
+                                  back
+
+    3. Memory and                 Answers questions over        Says NOT FOUND when           9–10     3
+    retrieval                     the data pack and cites       the pack is silent; carries
+                                  the document and line it      decisions forward
+                                  used                          between sessions
+
+    4. Risk and                   Scored risk register with     Three what-ifs                11       3, 7
+    what-if                       owners and triggers, each     compared; risks re-
+                                  risk linked to the work it    scored automatically
+                                  threatens; one what-if        when the plan changes
+                                  with schedule and cost
+                                  impact and stated
+                                  assumptions
+
+
+
+
+                                                                                                       Page 4 of 11
+MA6094 Capstone Brief — Harbourline Community Hub
+
+
+
+
+    Module                        Minimum                      Stretch                     Course      ILO
+                                                                                           weeks
+
+    5. Reporting                  Weekly committee             Critic findings logged;     6–7         6, 8
+    with a critic                 update and monthly grant     you can show a report
+                                  report from the same         the critic stopped
+                                  facts; a critic agent
+                                  checks both before a
+                                  human sees them, with a
+                                  stop condition
+
+    6. Change                     Responds to the Week 12      Stale outputs refresh       12          2, 7
+    handling                      change event: detects it,    without being re-run by
+                                  shows what in the plan,      hand
+                                  register and reports is
+                                  now stale, drafts actions
+                                  for a human
+
+    Governance                    Named human                  A bias and fairness         10          5
+    layer                         checkpoints; audit log of    check on the resident-
+                                  every agent write; agents    consultation summary
+                                  never delete or close
+                                  work items
+
+
+  Two integration rules apply to the whole system. At least one hand-off between modules
+  must run without a person copying output across. And every place a person must approve
+  something has to be designed in, not discovered.
+
+
+  Constraints, tools and guardrails
+  You may build with code or without it; the grade rewards the system's reasoning and
+  control, not the amount of code. Every required feature must run on free tiers. A paid
+  feature may appear in your demo only if the same requirement is also met on a free route.
+
+
+    Use for                         Permitted                              Notes
+
+    Agents and                      ChatGPT, Claude, Gemini, Google AI     Keep Role and Context fixed per
+    prompts                         Studio                                 agent, as in Weeks 2–3
+
+    No-code                         Google Opal, n8n, Zapier               Opal cannot loop or branch: say
+    chaining                                                               how you work around that
+
+
+
+
+                                                                                                       Page 5 of 11
+MA6094 Capstone Brief — Harbourline Community Hub
+
+
+
+
+    Use for                         Permitted                        Notes
+
+    Code                            Python with the OpenAI Agents    Optional. Expected for the
+    orchestration                   SDK, CrewAI or LangChain         stretch column of Module 6
+
+    PM tool                         Jira Cloud Free (recommended),   Your team's own site, never a
+                                    Asana, MS Planner                work instance
+
+    Data                            The provided data pack only      No employer or client material in
+                                                                     any prompt
+
+
+  Do not build on OpenAI Agent Builder, which its vendor has announced will shut down on
+  30 November 2026, or on ChatGPT agent mode, which has been withdrawn. Check any
+  tool you depend on again in Week 12; vendor change is itself a risk you should log.
+
+  Guardrails that apply to every team:
+
+       One sandbox project in your own PM tool site; label every agent-created item ai-
+       generated .
+       Agents may create, update and comment. Moving work to Done, closing or deleting is a
+       human act.
+       API tokens are personal. They never appear in shared documents, slides, screenshots
+       or recorded prompts.
+       Start read-only; add write access only after the read path works and is logged.
+
+
+  Milestones
+  There is one checkpoint: the submission pack, due by 23:59 on Wed 11 Nov 2026 for Group
+  A and Thu 12 Nov 2026 for Group B. The weeks before it are yours to plan; the guide below
+  shows where a team on track should be each week.
+
+
+
+
+                                                                                                     Page 6 of 11
+MA6094 Capstone Brief — Harbourline Community Hub
+
+
+
+
+  capstone roadmap · Weeks 9–13, four checkpoints
+
+  Sponsor channels. Send questions to the sponsor at any time before you submit, through
+  NTULearn. There is no question deadline, but early questions get answers in time to use
+  them. Answers are posted to every team, and anything the sponsor declines to answer
+  stays an open assumption in your register.
+
+
+  Deliverables
+  The submission pack is the only checkpoint. Group A submits by 23:59 on Wed 11 Nov
+  2026 and Group B by 23:59 on Thu 12 Nov 2026. Everything is submitted as files or links;
+  nothing is graded from memory of the demo alone.
+
+
+
+
+                                                                                       Page 7 of 11
+MA6094 Capstone Brief — Harbourline Community Hub
+
+
+
+
+    #          Deliverable                   What it must contain                           Limit
+
+    1          Design                        Architecture diagram; one agent card per       8 pages plus
+               document                      agent (role, inputs, outputs, tools, stop      appendices
+                                             condition); human checkpoint map; data
+                                             contract with your PM tool; assumption
+                                             register with the sponsor's answers
+
+    2          Working system                A link or repository the panel can open,       Recording 10 min
+                                             plus a recorded end-to-end run used if
+                                             the live demo fails
+
+    3          Evaluation                    Test set of at least 20 cases, including the   4 pages
+               report                        brief's gaps and the Week 12 change;
+                                             results on the five measures below
+
+    4          Governance log                Exported audit trail of agent writes; every    Export plus 2 pages
+                                             checkpoint with who approved; bias and
+                                             fairness check; incidents and what you
+                                             changed
+
+    5          Presentation                  Slides for the Week 13 panel                   12 min plus Q&A
+
+    6          Peer evaluation               Each member rates each teammate's              One form each
+                                             contribution, submitted individually and
+                                             confidentially
+
+
+  The five evaluation measures every team reports, so results can be compared across
+  teams:
+
+   1. Gap recall — how many of the brief's open questions your system surfaced
+      unprompted.
+   2. Invention rate — share of sampled claims in outputs that cannot be traced to the brief,
+        the data pack or a sponsor answer.
+   3. Re-run stability — what changes, and what duplicates, when the same input runs
+      twice.
+   4. Critic catch rate — faults you planted in a draft report that the critic found.
+   5. Cost and time per full run — tokens or credits and minutes, as in Week 7.
+
+  The individual reflection (5%, a separate component) is written about this project and
+  due by 23:59 on Fri 20 Nov 2026.
+
+
+
+
+                                                                                                               Page 8 of 11
+MA6094 Capstone Brief — Harbourline Community Hub
+
+
+
+
+  Assessment
+  The capstone is worth 40% and has three components, as filed in the course outline:
+  system build, live presentation and demonstration with panel Q&A, and peer evaluation.
+  The 40% is divided as below.
+
+
+    Component                                       Weight   Graded on                    Team or individual
+
+    System build                                    20%      Deliverables 1–4             Team
+
+    Live presentation, demo and                     15%      Deliverable 5 and the        Team, with individual
+    panel Q&A                                                live session                 answers
+
+    Peer evaluation                                 5%       Deliverable 6                Individual
+
+
+  What the panel looks for, in the five areas the course outline names:
+
+
+    Area                                             A strong team shows                                       ILO
+
+    System integration                               Modules hand off to each other; the PM tool               2, 6
+                                                     reflects the plan; stale outputs are caught after a
+                                                     change
+
+    Technical implementation                         The system runs end to end on free tiers; re-runs         2, 3
+                                                     do not duplicate; failures are visible, not silent
+
+    Design trade-offs                                Each place a human decides is argued, not                 7
+                                                     assumed; you can say what you chose not to
+                                                     automate and why
+
+    Governance and responsible AI                    Audit trail complete; checkpoints named; bias and         4, 5
+                                                     fairness check done and acted on; no invented
+                                                     facts reach a stakeholder
+
+    Communication                                    Reports fit their audience; the panel can follow the      8
+                                                     system in 12 minutes; every member answers at
+                                                     least one question
+
+
+  Peer evaluation can also moderate an individual's share of the team marks where
+  contribution was clearly unequal.
+
+
+
+
+                                                                                                               Page 9 of 11
+MA6094 Capstone Brief — Harbourline Community Hub
+
+
+
+
+  Rules
+       AI use is expected, and must be declared. The design document lists which tools
+       produced which parts of every deliverable, including the documents themselves.
+       Academic integrity applies as in the course policy. Reusing another team's prompts,
+       agents or evaluation results without attribution is collusion.
+       Sponsor questions go through the sponsor channels only. Answers given to one team
+       are posted to all teams.
+       Synthetic data only. The data pack is fictional. Do not add real resident, employer or
+       client information to any prompt, file or tool.
+       Team problems are raised early. A member not contributing is raised with the
+       instructor as soon as it happens, not first in the peer evaluation.
+
+
+  Appendix: data pack
+  The data pack simulates the project's first three months and is released on NTULearn
+  with the first round of sponsor answers. All of it is synthetic. It is the only source your
+  memory, risk and reporting modules may draw on, besides the brief and sponsor answers.
+
+
+    File                                             Format    Used by
+
+    Estate Development Committee minutes, 6          Text      Memory, reporting
+    meetings
+
+    Contractor monthly progress reports, 3           PDF       Memory, risk, reporting
+    months
+
+    Contract deliverables schedule                   CSV       Change handling, risk
+
+    Seed risk register, inherited from the           CSV       Risk
+    feasibility study
+
+    Resident consultation responses, about 200       CSV       Governance (bias and fairness
+    comments                                                   check)
+
+    Lessons learned from an earlier hub              Text      Memory, risk
+    refurbishment
+
+    Grant milestone and tranche schedule             Text      Planning, reporting
+
+
+
+
+                                                                                           Page 10 of 11
+MA6094 Capstone Brief — Harbourline Community Hub
+
+
+
+
+  The files do not always agree with each other or with the brief. Where they conflict, your
+  system should say so and name both sources rather than pick one silently.
+
+
+
+
+                                                                                        Page 11 of 11
+

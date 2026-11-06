@@ -1,0 +1,9 @@
+# secrets - never commit
+.env
+.env.*
+!.env.example
+# local runtime data
+data/*.db*
+__pycache__/
+*.pyc
+.DS_Store

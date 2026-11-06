@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Harbourline AI PM</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="logo">H</span>
+    <div><b>Harbourline AI PM</b><small>Community Hub Refurbishment · governed agent system</small></div>
+  </div>
+  <div class="who">
+    <label for="approver">Approver (named human)</label>
+    <input id="approver" placeholder="Your name" autocomplete="name">
+    <span id="mode" class="chip"></span>
+  </div>
+</header>
+<div class="shell">
+  <nav id="nav">
+    <a data-tab="overview" class="on">Overview</a>
+    <a data-tab="planning">1 · Planning</a>
+    <a data-tab="pm">2 · PM tool</a>
+    <a data-tab="memory">3 · Memory</a>
+    <a data-tab="risk">4 · Risk &amp; what-if</a>
+    <a data-tab="reports">5 · Reports &amp; critic</a>
+    <a data-tab="change">6 · Change</a>
+    <a data-tab="governance">Governance</a>
+    <a data-tab="agents">Agent cards</a>
+    <a data-tab="eval">Evaluation</a>
+  </nav>
+  <main id="main"></main>
+</div>
+<div id="modal" hidden><div class="modal-card"><button class="x" id="modal-x" aria-label="Close">×</button><div id="modal-body"></div></div></div>
+<div id="toast" hidden></div>
+<script src="/app.js"></script>
+</body>
+</html>

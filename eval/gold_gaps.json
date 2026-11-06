@@ -1,0 +1,27 @@
+{
+  "note": "Hand-labelled list of the brief's open questions and contradictions, written by reading the brief only. Matching: a gold gap counts as surfaced if ONE surfaced gap/conflict text contains at least one keyword from EVERY group. Review and extend this list as a team - it is the denominator of Gap recall.",
+  "gaps": [
+    {"id": "G01", "text": "Start date and what the 22 months covers (tender? design?)", "groups": [["22"], ["start", "tender", "possession"]]},
+    {"id": "G02", "text": "22 months vs 'fully open by Q4 2028' - which completion test?", "groups": [["q4 2028", "fully open"], ["22", "31 dec"]]},
+    {"id": "G03", "text": "Hub open throughout vs M&E/lift replacement; what may close", "groups": [["open"], ["closure", "close"]]},
+    {"id": "G04", "text": "Who appoints the active ageing operator and when", "groups": [["active ageing", "aac"], ["appoint"]]},
+    {"id": "G05", "text": "Childcare enrolment month 18 - handover date and licensing period", "groups": [["childcare"], ["handover", "licens"]]},
+    {"id": "G06", "text": "Grant conditions 'will follow' - eligibility and tranches unknown", "groups": [["grant"], ["condition", "eligib"]]},
+    {"id": "G07", "text": "Who funds the remaining 40%", "groups": [["40%", "remaining", "balance"]]},
+    {"id": "G08", "text": "Is there a contingency", "groups": [["contingency"]]},
+    {"id": "G09", "text": "Cost breakdown by scope element", "groups": [["cost"], ["breakdown", "split", "each scope", "element"]]},
+    {"id": "G10", "text": "When consultation happens and who runs it", "groups": [["consult"], ["timing", "when", "before tender", "during"]]},
+    {"id": "G11", "text": "How 'high resident satisfaction' is measured", "groups": [["satisfaction"]]},
+    {"id": "G12", "text": "Energy performance target", "groups": [["energy"]]},
+    {"id": "G13", "text": "Barrier-free access while lifts are replaced", "groups": [["barrier-free", "accessib"], ["lift"]]},
+    {"id": "G14", "text": "Existing leases/licences during works", "groups": [["lease", "licence"]]},
+    {"id": "G15", "text": "Change / variation approval authority", "groups": [["variation", "change"], ["approv", "authority", "threshold"]]},
+    {"id": "G16", "text": "Content and cadence of the weekly committee update", "groups": [["weekly"], ["update", "edc", "committee"]]},
+    {"id": "G17", "text": "Rooftop garden feasibility / funding", "groups": [["rooftop"]]},
+    {"id": "G18", "text": "Hazardous materials in a 1994 building", "groups": [["hazard", "asbestos"]]},
+    {"id": "G19", "text": "Who operates the Hub after completion", "groups": [["operat"], ["after", "utilisation", "tranche 4"]]},
+    {"id": "G20", "text": "Is ~100 childcare places a fixed requirement given demand", "groups": [["100"], ["capacity", "places", "demand"]]},
+    {"id": "G21", "text": "Permitted working hours / noise limits while the Hub is open", "groups": [["working hours", "work-hour", "sunday"]]},
+    {"id": "G22", "text": "60% grant of S$18.5M vs eligible-cost basis", "groups": [["60"], ["eligible", "cap"]]}
+  ]
+}
