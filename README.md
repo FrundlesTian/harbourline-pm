@@ -15,6 +15,7 @@ python3 server.py          # 或 ./run.sh
 * **LLM（可选）**：在 `.env` 中填写 `DEEPSEEK_API_KEY` 即可启用 DeepSeek。不填时系统以确定性模式完整运行（成本为零，重跑结果完全一致）。LLM 产出的内容必须先经过引用校验和 Critic 的数字溯源检查，才会被采用；不通过就丢弃，并记入审计日志。
 * **Jira（可选）**：配置 `JIRA_BASE_URL / JIRA_EMAIL / JIRA_API_TOKEN / JIRA_PROJECT_KEY` 后写入真实的 Jira Cloud Free；不配置时写入本地 SQLite 模拟看板。两者使用同一份数据契约。
 * 运行评估：`python3 eval/run_eval.py --no-llm`，结果写入 `eval/results/latest.md` 和 `latest.json`。也可以在 UI 的 Evaluation 页点击运行。
+* **界面语言**：页面右上角的“中文 / EN”按钮可即时切换界面，选择会保存在浏览器中。导航、操作控件、提示、状态及内置确定性报告提供中文译文；启用 DeepSeek 时，动态生成的项目文字也会按需翻译。来源引文和用户输入保留原文，便于核对证据。
 
 ## 需求 → 实现对照
 

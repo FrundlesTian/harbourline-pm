@@ -10,7 +10,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 from app import (agents, audit, change, config, db, governance, memory, pipeline, planning, pmtool,
-                 reporting, risk, sources)
+                 reporting, risk, sources, translation)
 
 ROOT = config.ROOT
 
@@ -138,6 +138,20 @@ def api_ask(q, b):
     return ok(memory.answer(b.get("question", ""), use_llm=b.get("use_llm", True)))
 
 
+def api_translate(q, b):
+    if not isinstance(b.get("text"), str) or len(b["text"]) > 10000:
+        return 400, {"error": "text must be a string of at most 10000 characters"}
+    return ok(translation.to_chinese(b["text"]))
+
+
+def api_translate_batch(q, b):
+    texts = b.get("texts")
+    if (not isinstance(texts, list) or len(texts) > 300 or
+            any(not isinstance(x, str) for x in texts) or sum(map(len, texts)) > 60000):
+        return 400, {"error": "texts must be a list of strings, at most 300 items and 60000 characters"}
+    return ok({"texts": translation.many_to_chinese(texts)})
+
+
 def api_qa_log(q, b):
     return ok({"log": db.q("SELECT * FROM qa_log ORDER BY id DESC LIMIT 50"),
                "decisions": db.q("SELECT * FROM decisions ORDER BY id")})
@@ -247,7 +261,9 @@ ROUTES = {
     ("GET", "/api/pm/preview"): api_pm_preview, ("POST", "/api/pm/apply"): api_pm_apply,
     ("GET", "/api/pm/board"): api_pm_board, ("GET", "/api/pm/readback"): api_pm_readback,
     ("POST", "/api/pm/agent_attempt"): api_pm_agent_attempt, ("POST", "/api/pm/human"): api_pm_human,
-    ("POST", "/api/ask"): api_ask, ("GET", "/api/qa"): api_qa_log, ("POST", "/api/decision"): api_decision,
+    ("POST", "/api/ask"): api_ask, ("POST", "/api/translate"): api_translate,
+    ("POST", "/api/translate-batch"): api_translate_batch,
+    ("GET", "/api/qa"): api_qa_log, ("POST", "/api/decision"): api_decision,
     ("GET", "/api/risk"): api_risk, ("GET", "/api/reports"): api_reports,
     ("POST", "/api/reports/generate"): api_reports_generate, ("POST", "/api/reports/plant"): api_plant,
     ("GET", "/api/change"): api_change, ("POST", "/api/change/inject"): api_change_inject,

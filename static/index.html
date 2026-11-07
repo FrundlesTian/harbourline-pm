@@ -13,6 +13,10 @@
     <div><b>Harbourline AI PM</b><small>Community Hub Refurbishment · governed agent system</small></div>
   </div>
   <div class="who">
+    <div class="language-switch" role="group" aria-label="Language / 语言">
+      <button type="button" id="lang-zh" aria-pressed="false">中文</button>
+      <button type="button" id="lang-en" aria-pressed="true">EN</button>
+    </div>
     <label for="approver">Approver (named human)</label>
     <input id="approver" placeholder="Your name" autocomplete="name">
     <span id="mode" class="chip"></span>
@@ -35,6 +39,7 @@
 </div>
 <div id="modal" hidden><div class="modal-card"><button class="x" id="modal-x" aria-label="Close">×</button><div id="modal-body"></div></div></div>
 <div id="toast" hidden></div>
+<script src="/i18n.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>

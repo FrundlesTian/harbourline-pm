@@ -11,6 +11,20 @@ async function api(path, body) {
   if (!r.ok) { toast(j.error || `HTTP ${r.status}`); throw new Error(j.error); }
   return j;
 }
+async function displayText(text) {
+  if (window.HCH_I18N.language !== "zh" || !text) return text;
+  try { return (await api("/api/translate", { text })).text; } catch (_) { return text; }
+}
+async function translateExtra(values) {
+  if (window.HCH_I18N.language !== "zh") return;
+  const texts = [...new Set(values.flat(Infinity).filter((x) => typeof x === "string" &&
+    x.length > 12 && /[A-Za-z]/.test(x) && window.HCH_I18N.translate(x) === x))];
+  if (!texts.length) return;
+  try {
+    const result = await api("/api/translate-batch", { texts });
+    window.HCH_I18N.addTranslations(Object.fromEntries(texts.map((source, i) => [source, result.texts[i]])));
+  } catch (_) {}
+}
 function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(t._h); t._h = setTimeout(() => (t.hidden = true), 4200); }
 function approver() {
   const v = $("#approver").value.trim();
@@ -131,6 +145,10 @@ async function vPlanning() {
      <td>${m.date ? esc(m.date) : chip("TBD", "warn")}</td><td>${m.depends_on.join(", ")}</td><td>${/CONFLICT|NOT FOUND|AT RISK/.test(m.note) ? `<span style="color:var(--stop)">${esc(m.note)}</span>` : esc(m.note)}</td><td>${cites(m.sources)}</td></tr>`))}`;
   $("#hc1").onclick = () => approve("HC1");
   $("#hc2").onclick = () => approve("HC2");
+  void translateExtra([p.scope.title, p.scope.objective.text, p.scope.success.text,
+    p.scope.lines.map((x) => x.text), p.gaps.flatMap((x) => [x.question, x.why, x.answer, x.assumption]),
+    p.conflicts.map((x) => x.detail), p.wbs.flatMap((x) => [x.description, x.acceptance]),
+    p.flagged.flatMap((x) => [x.name, x.reason]), p.milestones.map((x) => x.note)]);
 }
 async function approve(cp, item_id, decision = "approved", comment = "") {
   const who = approver(); if (!who) return;
@@ -185,6 +203,7 @@ async function vPM() {
     const who = approver(); if (!who) return;
     await api("/api/pm/human", { key: btn.dataset.human, status: "Done", human: who }); render();
   });
+  void translateExtra(b.issues.flatMap((x) => [x.summary, x.description, ...(x.comments || []).map((c) => c.body)]));
 }
 
 /* ------------------------------------------------------------ Memory */
@@ -205,8 +224,10 @@ async function vMemory() {
   <h2>Recent questions</h2>
   ${table(["Time", "Question", "Answer", "Mode"], log.log.map((r) => `<tr><td class="mono">${esc(r.ts)}</td><td>${esc(r.question)}</td><td>${r.not_found ? chip("NOT FOUND", "warn") : esc(r.answer.slice(0, 160))}</td><td>${esc(r.mode)}</td></tr>`))}`;
   const ask = async (q) => {
-    $("#q").value = q;
-    const a = await api("/api/ask", { question: q, use_llm: true });
+    const query = SAMPLE_Q.find((sample) => window.HCH_I18N.translate(sample) === q) || q;
+    $("#q").value = window.HCH_I18N.language === "zh" ? window.HCH_I18N.translate(query) : query;
+    const a = await api("/api/ask", { question: query, use_llm: true });
+    if (!a.not_found) a.answer = await displayText(a.answer);
     $("#ans").innerHTML = `<div class="answer ${a.not_found ? "nf" : ""}">
       ${a.not_found ? `<b>NOT FOUND</b> <span class="muted">— ${esc(a.reason || "")}</span>` : esc(a.answer).replace(/\[([A-Z0-9\-.]+)\]/g, (m, id) => `<span class="cite" data-src="${id}">${id}</span>`)}
       <div class="row">${cites(a.citations)} ${chip(a.mode)}</div>
@@ -249,6 +270,9 @@ async function vRisk() {
     <b>Assumptions</b><ul>${w.assumptions.map((a) => `<li>${esc(a)}</li>`).join("")}</ul>
     <b>Result</b><pre class="mono" style="white-space:pre-wrap">${esc(JSON.stringify(w.result, null, 1))}</pre>${cites(w.sources)}</div>`).join("")}`;
   $("#hc4").onclick = () => approve("HC4");
+  void translateExtra([r.seed_qa.map((x) => x.issue),
+    r.register.flatMap((x) => [x.trigger_cond, x.mitigation, x.note]),
+    r.whatifs.flatMap((x) => [x.assumptions, Object.values(x.result || {})])]);
 }
 
 /* ------------------------------------------------------------ Reports */
@@ -259,7 +283,7 @@ function md(text) {
     if (l.startsWith("&gt; ")) return `<blockquote class="muted">${l.slice(5)}</blockquote>`;
     if (l.startsWith("- ")) return `<li>${l.slice(2)}</li>`;
     return l ? `<p>${l}</p>` : "";
-  }).join("").replace(/\[([A-Z0-9:\-., ]+)\]/g, (m, ids) => ids.split(/,\s*/).map((id) => `<span class="cite" data-src="${id.trim()}">${id.trim()}</span>`).join(""));
+  }).join("").replace(/\[([A-Za-z0-9:\-., ]+)\]/g, (m, ids) => ids.split(/,\s*/).map((id) => `<span class="cite" data-src="${id.trim()}">${id.trim()}</span>`).join(""));
 }
 let selReport = null;
 async function vReports() {
@@ -269,7 +293,7 @@ async function vReports() {
   <h1>5 · Reporting with a critic</h1>
   <p class="lead">One fact sheet feeds two audiences: a one-page EDC exception update and the NRF monthly report (clause 3.2 contents). The Critic traces every number and date to a cited source, checks required sections, the top five risks, conflicts and change events, and STOPs the draft on any fault. Only Critic-passed drafts can be released (HC5).</p>
   <div class="row"><button class="ghost" id="genE">Regenerate EDC draft</button><button class="ghost" id="genN">Regenerate NRF draft</button><label class="muted"><input type="checkbox" id="usellm" checked> use LLM summary</label>
-   <span class="muted">Plant a fault:</span><select id="fault">${["wrong_number", "invented_figure", "missing_citation", "drop_section", "wrong_top5", "status_spin", "remove_conflicts", "wrong_date", "invented_person", "hidden_gap", "bad_calc"].map((f) => `<option>${f}</option>`).join("")}</select>
+   <span class="muted">Plant a fault:</span><select id="fault">${["wrong_number", "invented_figure", "missing_citation", "drop_section", "wrong_top5", "status_spin", "remove_conflicts", "wrong_date", "invented_person", "hidden_gap", "bad_calc"].map((f) => `<option value="${f}">${f}</option>`).join("")}</select>
    <select id="fkind"><option value="nrf">NRF</option><option value="edc">EDC</option></select><button class="danger" id="plant">Plant &amp; run Critic</button></div>
   <div class="split"><div class="list card">${reports.map((r) => `<a data-r="${r.id}" class="${r.id === selReport ? "on" : ""}">${esc(r.id)}<br>${statusChip(r.status)} ${r.event_id ? chip(r.event_id, "warn") : ""}</a>`).join("") || "No reports"}</div><div id="rview"></div></div>`;
   main.querySelectorAll("[data-r]").forEach((a) => (a.onclick = () => { selReport = a.dataset.r; vReports(); }));
@@ -281,18 +305,30 @@ async function vReports() {
   };
   if (!selReport) return;
   const r = await api(`/api/report/${encodeURIComponent(selReport)}`);
+  let content = r.content;
+  const summary = content.match(/## Summary\n([\s\S]*?)(?=\n## |$)/);
+  if (summary && window.HCH_I18N.language === "zh") {
+    const original = summary[1].trim();
+    content = content.replace(original, await displayText(original));
+  }
+  if (current !== "reports" || !$("#rview")) return;
   $("#rview").innerHTML = `
    <div class="row">${statusChip(r.status)} ${r.llm_used ? chip("LLM summary (checked)", "info") : chip("deterministic")}
      <button id="rel" ${r.status === "critic_passed" ? "" : "disabled"}>Release to readers (HC5)</button>
      <span>${r.approval ? approvalLine(r.approval) : ""}</span></div>
    <div class="card"><b>Critic findings</b>${r.critic.map((f) => `<div class="finding ${f.severity}"><b>${esc(f.rule)}</b> ${esc(f.detail)}</div>`).join("")}</div>
-   <div class="report">${md(r.content)}</div>`;
+   <div class="report">${md(content)}</div>`;
   $("#rel").onclick = async () => { await approve("HC5", r.id); };
 }
 
 /* ------------------------------------------------------------ Change */
 async function vChange() {
   const c = await api("/api/change");
+  if (window.HCH_I18N.language === "zh") {
+    await Promise.all(c.events.map(async (e) => {
+      if (e.impact?.narrative?.text) e.impact.narrative.display = await displayText(e.impact.narrative.text);
+    }));
+  }
   const pending = c.actions.filter((a) => a.status === "pending");
   main.innerHTML = `
   <h1>6 · Change handling</h1>
@@ -309,7 +345,7 @@ async function vChange() {
     <h3>Now stale</h3>${(i.stale || []).map((s) => `<div class="finding STOP">${esc(s.type)} ${esc(s.id)} — ${esc(s.reason)}</div>`).join("")}
     <h3>Regenerated automatically</h3><p>${(i.regenerated || []).map((x) => chip(x, "ok")).join(" ")}</p>
     <h3>Cost and time impact</h3><ul>${(i.cost_time || []).map((x) => `<li>${esc(x.text)} ${cites(x.cites)} ${x.trace === "ok" ? chip("traced", "ok") : chip("untraced", "stop")}</li>`).join("")}</ul>
-    ${i.narrative && i.narrative.text ? `<p><b>LLM summary (Critic-checked):</b> ${esc(i.narrative.text)}</p>` : ""}
+    ${i.narrative && i.narrative.text ? `<p><b>LLM summary (Critic-checked):</b> ${esc(i.narrative.display || i.narrative.text)}</p>` : ""}
     <h3>Sponsor decisions needed</h3>${table(["What", "Who", "When", "Sources"], (i.decisions || []).map((d) => `<tr><td>${esc(d.what)}</td><td>${esc(d.who)}</td><td>${esc(d.when)}</td><td>${cites(d.sources)}</td></tr>`))}
     <h3>UNRESOLVED</h3><ul>${(i.unresolved || []).map((u) => `<li>${esc(u.item)} ${cites(u.sources)}</li>`).join("")}</ul>
     <button class="ghost" data-note="${esc(e.id)}">View Change Impact Note</button></div>`;
@@ -333,6 +369,11 @@ async function vChange() {
     const ev = { id: $("#cid").value.trim(), date: $("#cdate").value.trim(), title: $("#ctitle").value.trim(), text: $("#ctext").value.trim(), source: "Custom input" };
     await api("/api/change/inject", { custom: ev }); vChange();
   };
+  void translateExtra(c.events.filter((e) => /^CE-0[12]$/.test(e.id)).flatMap((e) => {
+    const i = e.impact || {};
+    return [e.title, e.text, (i.stale || []).map((x) => x.reason), (i.cost_time || []).map((x) => x.text),
+      (i.decisions || []).flatMap((x) => [x.what, x.when]), (i.unresolved || []).map((x) => x.item)];
+  }));
 }
 
 /* ------------------------------------------------------------ Governance */
@@ -366,6 +407,7 @@ async function vGov() {
   <div id="audit">${auditTable(g.audit)}</div>`;
   if ($("#hc7")) $("#hc7").onclick = () => approve("HC7", "BIAS-1");
   $("#af").oninput = () => { const f = $("#af").value.toLowerCase(); $("#audit").innerHTML = auditTable(g.audit.filter((a) => JSON.stringify(a).toLowerCase().includes(f))); };
+  if (b) void translateExtra([b.findings.map((x) => x.text), b.actions]);
 }
 function auditTable(rows) {
   return table(["#", "Time", "Run", "Actor", "Type", "Action", "Target", "Outcome", "Detail"], rows.map((a) => `<tr><td>${a.id}</td><td class="mono">${esc(a.ts)}</td><td class="mono">${esc((a.run_id || "").slice(-11))}</td><td>${esc(a.actor)}</td><td>${esc(a.actor_type)}</td><td>${esc(a.action)}</td><td class="mono">${esc(a.target_type)} ${esc(a.target_id)}</td><td>${statusChip(a.outcome)}</td><td class="mono">${esc(a.detail).slice(0, 140)}</td></tr>`));
@@ -381,6 +423,7 @@ async function vAgents() {
    <p><b>Inputs.</b> ${x.inputs.map(esc).join("; ")}<br><b>Outputs.</b> ${x.outputs.map(esc).join("; ")}<br><b>Tools.</b> ${x.tools.map(esc).join("; ")}</p>
    <p><b>Stop condition.</b> ${esc(x.stop)}<br><b>Checkpoint.</b> ${esc(x.checkpoint)}</p>
    <details><summary>System prompt</summary><pre class="mono" style="white-space:pre-wrap">${esc(x.system_prompt)}</pre></details></div>`).join("")}</div>`;
+  void translateExtra(a.agents.flatMap((x) => [x.name, x.role, x.context, x.inputs, x.outputs, x.tools, x.stop]));
 }
 
 /* ------------------------------------------------------------ Evaluation */
@@ -400,9 +443,11 @@ async function vEval() {
   ${table(["ID", "Category", "Test", "Result", "Detail"], e.cases.map((c) => `<tr><td>${c.id}</td><td>${esc(c.category)}</td><td>${esc(c.description)}</td><td>${statusChip(c.pass ? "PASS" : "FAIL")}</td><td class="mono">${esc(String(c.detail)).slice(0, 220)}</td></tr>`))}`}`;
   $("#ev").onclick = async () => { $("#ev").disabled = true; toast("Running evaluation…"); await api("/api/eval/run", { use_llm: false }); vEval(); };
   $("#evl").onclick = async () => { $("#evl").disabled = true; toast("Running evaluation with LLM…"); await api("/api/eval/run", { use_llm: true }); vEval(); };
+  if (!e.missing) void translateExtra([e.cases.map((x) => x.description), m.gap_recall.missed || []]);
 }
 
 window.addEventListener("hashchange", () => selectTab(location.hash.slice(1)));
+window.addEventListener("hch-languagechange", () => render());
 function selectTab(t) {
   if (!VIEWS[t]) return;
   current = t;
