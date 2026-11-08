@@ -273,7 +273,7 @@ def approve_action(aid, approver, decision, comment=""):
             reporting.run_all(use_llm=llm.available(), event_id=a["origin"])
         elif a["kind"] == "pm_flag":
             pm = pmtool.backend()
-            rem = pm.find_by_ext(a["target"])
+            rem = pmtool.locate(pm, a["target"])
             if not rem:
                 result = "skipped: item not on board (run Tool sync first)"
             else:

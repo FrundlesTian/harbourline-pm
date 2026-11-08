@@ -2,12 +2,16 @@
 const $ = (s, el = document) => el.querySelector(s);
 const main = $("#main");
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-let current = "overview";
+let current = "dashboard";
+let ME = null;          // logged-in account (from /api/me); the server enforces every permission
+let ROLES_META = {};
+const can = (perm) => !!ME && (perm.startsWith("view.") ? ME.views.includes(perm.slice(5)) : perm.startsWith("HC") ? ME.checkpoints.includes(perm) : ME.actions.includes(perm));
 
 async function api(path, body) {
   const opt = body === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
   const r = await fetch(path, opt);
   const j = await r.json().catch(() => ({ error: "bad response" }));
+  if (r.status === 401) { showLogin(); throw new Error(j.error || "Please log in"); }
   if (!r.ok) { toast(j.error || `HTTP ${r.status}`); throw new Error(j.error); }
   return j;
 }
@@ -26,13 +30,23 @@ async function translateExtra(values) {
   } catch (_) {}
 }
 function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(t._h); t._h = setTimeout(() => (t.hidden = true), 4200); }
-function approver() {
-  const v = $("#approver").value.trim();
-  if (!v) { toast("Enter your name as approver first (top right). Checkpoints need a named human."); $("#approver").focus(); return null; }
-  try { localStorage.setItem("hch-approver", v); } catch (e) {}
-  return v;
+/* The approver is always the logged-in account; the server signs approvals with it. */
+function approver() { return ME ? ME.name : null; }
+
+/* Permission gating: any element with data-perm is disabled (or hidden with data-perm-hide)
+   when the role lacks it. This is cosmetic - the server returns 403 regardless. */
+function applyPerms(root) {
+  if (!ME || !root.querySelectorAll) return;
+  const els = root.matches && root.matches("[data-perm]") ? [root, ...root.querySelectorAll("[data-perm]")] : root.querySelectorAll("[data-perm]");
+  els.forEach((el) => {
+    if (can(el.dataset.perm)) return;
+    if (el.hasAttribute("data-perm-hide")) { el.hidden = true; return; }
+    el.disabled = true; el.classList.add("noperm");
+    el.title = `Not permitted for ${ME.role_label}: ${el.dataset.perm}`;
+  });
 }
-try { $("#approver").value = localStorage.getItem("hch-approver") || ""; } catch (e) {}
+new MutationObserver((recs) => recs.forEach((r) => r.addedNodes.forEach((n) => n.nodeType === 1 && applyPerms(n))))
+  .observe(document.getElementById("main"), { childList: true, subtree: true });
 
 const chip = (txt, cls = "") => `<span class="chip ${cls}">${esc(txt)}</span>`;
 function statusChip(s) {
@@ -85,6 +99,7 @@ async function vOverview() {
   main.innerHTML = `
   <h1>Harbourline Community Hub Refurbishment</h1>
   <p class="lead">Six agent modules and a governance layer working as one system. Facts come only from the brief, Sponsor Answers Round 1 and the data pack; anything else is reported as NOT FOUND. Agents draft; named humans approve at the checkpoints marked in amber.</p>
+  <div class="row"><a href="#dashboard">Open the visual dashboard and full process flowchart →</a></div>
   <div class="card"><div class="flow">
     <span class="node">Sources → fact store (${c.facts} verified facts)</span><span class="arrow">→</span>
     <span class="node">1 Planning</span><span class="hc node">HC1 · HC2</span><span class="arrow">→</span>
@@ -94,7 +109,7 @@ async function vOverview() {
     <span class="node">6 Change</span><span class="hc node">HC6</span><span class="arrow">·</span>
     <span class="node">Bias check</span><span class="hc node">HC7</span>
   </div></div>
-  <div class="row"><button id="run">Run full pipeline</button><button class="ghost" id="reset">Reset demo outputs</button>
+  <div class="row"><button id="run" data-perm="run.pipeline">Run full pipeline</button><button class="ghost" id="reset" data-perm="reset.demo">Reset demo outputs</button>
     <span class="muted">Re-running with the same inputs creates no new versions and no PM duplicates.</span></div>
   <div class="grid">
     ${[["Source chunks", c.sources], ["Sponsor Questions / gaps", c.gaps], ["Conflicts", c.conflicts], ["WBS elements", c.wbs], ["Milestones", c.milestones],
@@ -123,7 +138,7 @@ async function vPlanning() {
     ${table(["ID", "Scope line", "Kind", "Source"], p.scope.lines.map((l) => `<tr><td>${l.id}</td><td>${esc(l.text)}</td><td>${statusChip(l.kind)}</td><td>${cites([l.cite])}</td></tr>`))}
     <p><b>Success.</b> ${esc(p.scope.success.text)} ${cites([p.scope.success.source])}</p></div>
   <h2>Sponsor Questions &amp; assumption register (${p.gaps.length})</h2>
-  <div class="row">HC1: ${approvalLine(p.hc1)} <button id="hc1">Approve register (HC1)</button></div>
+  <div class="row">HC1: ${approvalLine(p.hc1)} <button id="hc1" data-perm="HC1">Approve register (HC1)</button></div>
   ${table(["ID", "Topic", "Question", "Why (brief evidence)", "Status", "Answer / assumption"], p.gaps.map((g) => `<tr>
      <td>${g.id}</td><td>${esc(g.category)}${g.sponsor_only ? "<br>" + chip("sponsor only", "info") : ""}</td><td>${esc(g.question)}</td>
      <td>${esc(g.why)} ${cites(g.sources)}</td><td>${statusChip(g.status)}</td>
@@ -131,7 +146,7 @@ async function vPlanning() {
   <h2>Conflicts between sources (${p.conflicts.length})</h2>
   ${table(["ID", "Topic", "What disagrees", "Sources (all named)"], p.conflicts.map((c) => `<tr><td>${c.id}</td><td>${esc(c.topic)}</td><td>${esc(c.detail)}</td><td>${cites(c.sources)}</td></tr>`))}
   <h2>WBS to Level 3 with dictionary (${p.wbs.length})</h2>
-  <div class="row">HC2 (plan version <span class="mono">${p.plan_hash}</span>): ${approvalLine(p.hc2)} <button id="hc2">Approve plan baseline (HC2)</button></div>
+  <div class="row">HC2 (plan version <span class="mono">${p.plan_hash}</span>): ${approvalLine(p.hc2)} <button id="hc2" data-perm="HC2">Approve plan baseline (HC2)</button></div>
   ${table(["Code", "Element", "Traces to", "Deliverables", "Owner", "Dictionary"], p.wbs.map((w) => `<tr>
      <td class="mono">${w.code}</td><td class="lvl${w.level}">${esc(w.name)}</td><td>${w.scope_refs.map((s) => chip(s)).join(" ")}</td>
      <td>${w.deliverable_refs.join(", ")}</td><td>${w.owner.startsWith("UNASSIGNED") ? chip(w.owner, "stop") : esc(w.owner)}</td>
@@ -161,26 +176,29 @@ async function approve(cp, item_id, decision = "approved", comment = "") {
 /* ------------------------------------------------------------ PM tool */
 async function vPM() {
   const b = await api("/api/pm/board");
+  const jira = b.backend === "jira";
   main.innerHTML = `
   <h1>2 · PM tool integration</h1>
-  <p class="lead">Backend: <b>${esc(b.backend)}</b> (project ${esc(b.project)}). Writes need the plan approved (HC2) and the exact diff approved (HC3). Stable external keys (<span class="mono">ext-HCH-…</span> labels) make a second run update rather than duplicate. Agents may create, update and comment; Done, close and delete are human acts.</p>
-  <div class="row"><button id="prev">1. Preview diff (read-only)</button><span id="previnfo" class="muted"></span></div>
+  ${jiraPanel(b)}
+  <p class="lead">Backend: <b>${esc(b.backend)}</b> (project <b data-no-translate>${esc(b.project)}</b>). Writes need the plan approved (HC2) and the exact diff approved (HC3). Stable external keys (<span class="mono">ext-HCH-…</span> labels) make a second run update rather than duplicate. Agents may create, update and comment; Done, close and delete are human acts.</p>
+  <div class="row"><button id="prev" data-perm="pm.write">1. Preview diff (read-only)</button><span id="previnfo" class="muted"></span></div>
   <div id="prevbox"></div>
   <h2>Board (${b.issues.length} items)</h2>
   <div class="row"><button class="ghost" id="rb">Read back &amp; verify</button><span id="rbinfo"></span></div>
   <div class="row"><span class="muted">Guardrail demo - the agent tries to:</span>
-    <button class="danger" data-op="done">move to Done</button><button class="danger" data-op="close">close</button><button class="danger" data-op="delete">delete</button></div>
+    <button class="danger" data-op="done" data-perm="pm.write">move to Done</button><button class="danger" data-op="close" data-perm="pm.write">close</button><button class="danger" data-op="delete" data-perm="pm.write">delete</button></div>
   ${table(["Key", "Type", "Summary", "Labels", "Due", "Status", "Links", "Comments", "Human"], b.issues.map((i) => `<tr>
-    <td class="mono">${esc(i.key)}</td><td>${esc(i.issue_type)}</td><td>${esc(i.summary)}${i.parent_key ? `<div class="muted">parent ${esc(i.parent_key)}</div>` : ""}</td>
+    <td class="mono">${i.url ? `<a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.key)} ↗</a>` : esc(i.key)}</td><td>${esc(i.issue_type)}</td><td>${esc(i.summary)}${i.parent_key ? `<div class="muted">parent ${esc(i.parent_key)}</div>` : ""}</td>
     <td>${i.labels.map((l) => chip(l, l === "ai-generated" ? "info" : l.startsWith("change-") ? "warn" : "")).join(" ")}</td>
     <td>${esc(i.due_date || "")}</td><td>${statusChip(i.status)}</td><td>${i.links.map((l) => esc(l.type + " " + l.key)).join("<br>")}</td>
     <td>${(i.comments || []).map((c) => `<div class="muted">${esc(c.body)}</div>`).join("")}</td>
-    <td>${b.backend === "mock" && i.status !== "Done" ? `<button class="ghost" data-human="${esc(i.key)}">Done</button>` : ""}</td></tr>`))}`;
+    <td>${b.backend === "mock" && i.status !== "Done" ? `<button class="ghost" data-human="${esc(i.key)}" data-perm="pm.write">Done</button>` : i.url ? `<a href="${esc(i.url)}" target="_blank" rel="noopener" class="muted">Open in Jira</a>` : ""}</td></tr>`))}`;
+  bindJiraPanel();
   $("#prev").onclick = async () => {
     const p = await api("/api/pm/preview");
     if (!p.ok) { $("#previnfo").innerHTML = chip(p.reason, "stop"); return; }
     $("#previnfo").innerHTML = `preview <span class="mono">${p.preview_id}</span>: ${Object.entries(p.counts).map(([k, v]) => chip(`${k} ${v}`, k === "unchanged" ? "ok" : "warn")).join(" ")}`;
-    $("#prevbox").innerHTML = `<div class="row"><button id="hc3">2. Approve this diff (HC3) and write</button></div>` +
+    $("#prevbox").innerHTML = `<div class="row"><button id="hc3" data-perm="HC3">2. Approve this diff (HC3) and write</button></div>` +
       `<details><summary>${p.items.length} items</summary>${table(["External key", "Summary", "Action", "Remote"], p.items.map((i) => `<tr><td class="mono">${esc(i.ext_key)}</td><td>${esc(i.summary)}</td><td>${statusChip(i.action)}</td><td>${esc(i.remote_key || "")}</td></tr>`))}</details>`;
     $("#hc3").onclick = async () => {
       const who = approver(); if (!who) return;
@@ -206,6 +224,43 @@ async function vPM() {
   void translateExtra(b.issues.flatMap((x) => [x.summary, x.description, ...(x.comments || []).map((c) => c.body)]));
 }
 
+/* Jira connection panel (PM tool page). The token is never sent to the browser. */
+function jiraPanel(b) {
+  const jira = b.backend === "jira";
+  let body;
+  if (jira) {
+    body = `<div class="row">${chip("Jira Cloud", "info")} <span>Site <a href="${esc(b.site)}" target="_blank" rel="noopener">${esc(b.site)}</a> · project <b>${esc(b.project)}</b></span>
+      ${b.error ? chip("connection error", "stop") : chip(`${b.issues.length} AI items on Jira`, "ok")}
+      <button class="ghost" id="jcheck">Test Jira connection</button></div>
+      ${b.error ? `<div class="finding STOP">${esc(b.error)}</div>` : ""}`;
+  } else if (b.jira_token_set && b.jira_missing.length) {
+    body = `<div class="row">${chip("Mock board (SQLite)", "warn")} <span>A Jira API token was found, but Jira stays off until these are set in <span class="mono">.env</span>:</span>
+      ${b.jira_missing.map((m) => chip(m, "stop")).join(" ")}<button class="ghost" id="jcheck">Check configuration</button></div>
+      <p class="muted small">Add <span class="mono">JIRA_BASE_URL=https://&lt;site&gt;.atlassian.net</span>, <span class="mono">JIRA_EMAIL</span> (the Atlassian account that owns the token) and <span class="mono">JIRA_PROJECT_KEY</span>, then restart the server.</p>`;
+  } else {
+    body = `<div class="row">${chip("Mock board (SQLite)", "info")} <span class="muted">Same data contract as Jira. Set JIRA_BASE_URL, JIRA_EMAIL and JIRA_API_TOKEN in .env to write to Jira Cloud.</span>
+      <button class="ghost" id="jcheck">Check configuration</button></div>`;
+  }
+  return `<div class="card jira">${body}<div id="jres"></div></div>`;
+}
+function bindJiraPanel() {
+  const btn = $("#jcheck");
+  if (!btn) return;
+  btn.onclick = async () => {
+    btn.disabled = true; $("#jres").innerHTML = `<span class="muted">Checking…</span>`;
+    try {
+      const h = await api("/api/pm/health");
+      $("#jres").innerHTML = h.ok ? `<div class="jgrid">
+        <div><span class="muted">Account</span><b>${esc(h.account)}</b></div>
+        <div><span class="muted">Project</span><b>${h.project.url ? `<a href="${esc(h.project.url)}" target="_blank" rel="noopener">${esc(h.project.key)} · ${esc(h.project.name)}</a>` : esc(h.project.key + " · " + h.project.name)}</b>${h.project.style ? `<small class="muted">${esc(h.project.style)}-managed</small>` : ""}</div>
+        <div><span class="muted">Issue type mapping</span>${Object.entries(h.type_mapping).map(([k, v]) => `<div>${esc(k)} → ${/^MISSING/.test(v) ? chip(v, "stop") : `<b>${esc(v)}</b>`}</div>`).join("")}</div>
+        <div><span class="muted">"Blocks" link type</span>${h.blocks_link_type ? chip("available", "ok") : chip("missing", "stop")}</div>
+        <div><span class="muted">Synced items</span><b>${h.synced_items}</b><small class="muted">${esc(h.last_sync || "never")}</small></div></div>`
+        : `<div class="finding STOP">${esc(h.error)}</div>`;
+    } finally { btn.disabled = false; }
+  };
+}
+
 /* ------------------------------------------------------------ Memory */
 const SAMPLE_Q = ["What is the maximum grant?", "When is practical completion?", "Who appoints the active ageing centre operator?",
   "How much is the asbestos removal estimate?", "What is the energy performance target?", "How much will the rooftop garden cost?",
@@ -215,11 +270,11 @@ async function vMemory() {
   main.innerHTML = `
   <h1>3 · Memory &amp; retrieval</h1>
   <p class="lead">Ask about the brief, sponsor answers or data pack. Answers cite document, section and lines; the agent says NOT FOUND when the pack is silent, and names both sides when sources conflict. Human decisions recorded below are carried into later sessions.</p>
-  <div class="row"><input id="q" style="flex:1;min-width:260px" placeholder="Ask a question…"><button id="ask">Ask</button></div>
+  <div class="row"><input id="q" style="flex:1;min-width:260px" placeholder="Ask a question…"><button id="ask" data-perm="memory.ask">Ask</button></div>
   <div class="row">${SAMPLE_Q.map((q) => `<span class="chip" style="cursor:pointer" data-q="${esc(q)}">${esc(q)}</span>`).join("")}</div>
   <div id="ans"></div>
   <h2>Decision log (carried forward)</h2>
-  <div class="row"><input id="dec" style="flex:1;min-width:260px" placeholder="e.g. Sponsor decided on 2027-04-08: east core closure accepted with temporary lift"><button class="ghost" id="adddec">Record decision</button></div>
+  <div class="row"><input id="dec" style="flex:1;min-width:260px" placeholder="e.g. Sponsor decided on 2027-04-08: east core closure accepted with temporary lift"><button class="ghost" id="adddec" data-perm="memory.decide">Record decision</button></div>
   ${table(["ID", "Decision", "By", "When"], log.decisions.map((d) => `<tr><td>${d.id}</td><td>${esc(d.text)}</td><td>${esc(d.made_by)}</td><td class="mono">${esc(d.date)}</td></tr>`))}
   <h2>Recent questions</h2>
   ${table(["Time", "Question", "Answer", "Mode"], log.log.map((r) => `<tr><td class="mono">${esc(r.ts)}</td><td>${esc(r.question)}</td><td>${r.not_found ? chip("NOT FOUND", "warn") : esc(r.answer.slice(0, 160))}</td><td>${esc(r.mode)}</td></tr>`))}`;
@@ -237,7 +292,7 @@ async function vMemory() {
   $("#ask").onclick = () => $("#q").value.trim() && ask($("#q").value.trim());
   $("#q").onkeydown = (e) => { if (e.key === "Enter") $("#ask").click(); };
   main.querySelectorAll("[data-q]").forEach((c) => (c.onclick = () => ask(c.dataset.q)));
-  $("#adddec").onclick = async () => { const who = approver(); if (!who || !$("#dec").value.trim()) return; await api("/api/decision", { text: $("#dec").value.trim(), made_by: who }); render(); };
+  $("#adddec").onclick = async () => { const who = approver(); if (!who || !$("#dec").value.trim()) return; await api("/api/decision", { text: $("#dec").value.trim() }); render(); };
 }
 
 /* ------------------------------------------------------------ Risk */
@@ -258,7 +313,7 @@ async function vRisk() {
   main.innerHTML = `
   <h1>4 · Risk register &amp; what-if</h1>
   <p class="lead">Scored L×I with owner, trigger and linked WBS; every row cites its evidence. The 2025 seed register was checked rather than trusted. Re-scoring after a change event is proposed by the agent and applied only after HC6.</p>
-  <div class="row">HC4 (register version <span class="mono">${r.risk_hash}</span>): ${approvalLine(r.hc4)} <button id="hc4">Approve register (HC4)</button></div>
+  <div class="row">HC4 (register version <span class="mono">${r.risk_hash}</span>): ${approvalLine(r.hc4)} <button id="hc4" data-perm="HC4">Approve register (HC4)</button></div>
   <div class="card" style="display:flex;gap:24px;flex-wrap:wrap"><div>${heat}</div>
     <div style="flex:1;min-width:260px"><h3>Seed register QA (computed)</h3>${r.seed_qa.map((f) => `<div class="finding STOP">${esc(f.risk)}: ${esc(f.issue)} ${cites([f.source])}</div>`).join("")}</div></div>
   ${table(["ID", "Risk", "Owner", "L", "I", "Score", "Trigger", "Mitigation", "WBS", "Status", "Sources"], r.register.map((x) => `<tr>
@@ -292,9 +347,9 @@ async function vReports() {
   main.innerHTML = `
   <h1>5 · Reporting with a critic</h1>
   <p class="lead">One fact sheet feeds two audiences: a one-page EDC exception update and the NRF monthly report (clause 3.2 contents). The Critic traces every number and date to a cited source, checks required sections, the top five risks, conflicts and change events, and STOPs the draft on any fault. Only Critic-passed drafts can be released (HC5).</p>
-  <div class="row"><button class="ghost" id="genE">Regenerate EDC draft</button><button class="ghost" id="genN">Regenerate NRF draft</button><label class="muted"><input type="checkbox" id="usellm" checked> use LLM summary</label>
+  <div class="row"><button class="ghost" id="genE" data-perm="reports.generate">Regenerate EDC draft</button><button class="ghost" id="genN" data-perm="reports.generate">Regenerate NRF draft</button><label class="muted"><input type="checkbox" id="usellm" checked> use LLM summary</label>
    <span class="muted">Plant a fault:</span><select id="fault">${["wrong_number", "invented_figure", "missing_citation", "drop_section", "wrong_top5", "status_spin", "remove_conflicts", "wrong_date", "invented_person", "hidden_gap", "bad_calc"].map((f) => `<option value="${f}">${f}</option>`).join("")}</select>
-   <select id="fkind"><option value="nrf">NRF</option><option value="edc">EDC</option></select><button class="danger" id="plant">Plant &amp; run Critic</button></div>
+   <select id="fkind"><option value="nrf">NRF</option><option value="edc">EDC</option></select><button class="danger" id="plant" data-perm="reports.plant">Plant &amp; run Critic</button></div>
   <div class="split"><div class="list card">${reports.map((r) => `<a data-r="${r.id}" class="${r.id === selReport ? "on" : ""}">${esc(r.id)}<br>${statusChip(r.status)} ${r.event_id ? chip(r.event_id, "warn") : ""}</a>`).join("") || "No reports"}</div><div id="rview"></div></div>`;
   main.querySelectorAll("[data-r]").forEach((a) => (a.onclick = () => { selReport = a.dataset.r; vReports(); }));
   $("#genE").onclick = async () => { await api("/api/reports/generate", { kind: "edc", use_llm: $("#usellm").checked }); vReports(); };
@@ -314,7 +369,7 @@ async function vReports() {
   if (current !== "reports" || !$("#rview")) return;
   $("#rview").innerHTML = `
    <div class="row">${statusChip(r.status)} ${r.llm_used ? chip("LLM summary (checked)", "info") : chip("deterministic")}
-     <button id="rel" ${r.status === "critic_passed" ? "" : "disabled"}>Release to readers (HC5)</button>
+     <button id="rel" data-perm="HC5" ${r.status === "critic_passed" ? "" : "disabled"}>Release to readers (HC5)</button>
      <span>${r.approval ? approvalLine(r.approval) : ""}</span></div>
    <div class="card"><b>Critic findings</b>${r.critic.map((f) => `<div class="finding ${f.severity}"><b>${esc(f.rule)}</b> ${esc(f.detail)}</div>`).join("")}</div>
    <div class="report">${md(content)}</div>`;
@@ -333,8 +388,8 @@ async function vChange() {
   main.innerHTML = `
   <h1>6 · Change handling</h1>
   <p class="lead">The Week 12 event is injected as a dated, numbered input; the data pack is never edited. The Change Agent finds affected WBS, deliverables, milestones and risks, marks stale outputs, refreshes what-ifs and report drafts automatically, and drafts actions that wait for HC6. It never edits the baseline, closes or deletes.</p>
-  <div class="row">${c.available.map((id) => `<button data-ce="${id}" ${c.events.find((e) => e.id === id) ? "class='ghost'" : ""}>Inject ${id}</button>`).join("")}
-    <details><summary>Custom event</summary><div class="card"><div class="row"><input id="cid" placeholder="CE-03"><input id="cdate" placeholder="2027-04-06"><input id="ctitle" placeholder="Title"></div><textarea id="ctext" rows="3" placeholder="Event text"></textarea><button id="cgo">Inject custom</button></div></details></div>
+  <div class="row">${c.available.map((id) => `<button data-ce="${id}" data-perm="change.inject" ${c.events.find((e) => e.id === id) ? "class='ghost'" : ""}>Inject ${id}</button>`).join("")}
+    <details data-perm="change.inject" data-perm-hide><summary>Custom event</summary><div class="card"><div class="row"><input id="cid" placeholder="CE-03"><input id="cdate" placeholder="2027-04-06"><input id="ctitle" placeholder="Title"></div><textarea id="ctext" rows="3" placeholder="Event text"></textarea><button id="cgo">Inject custom</button></div></details></div>
   ${c.events.map((e) => {
     const i = e.impact || {};
     return `<div class="card"><h2 style="margin-top:0">${esc(e.id)} · ${esc(e.title)} <span class="muted">(${esc(e.date)})</span></h2>
@@ -351,10 +406,10 @@ async function vChange() {
     <button class="ghost" data-note="${esc(e.id)}">View Change Impact Note</button></div>`;
   }).join("")}
   <h2>Actions awaiting HC6 (${pending.length})</h2>
-  <div class="row"><button id="appall" ${pending.length ? "" : "disabled"}>Approve all pending (each logged)</button></div>
+  <div class="row"><button id="appall" data-perm="HC6" ${pending.length ? "" : "disabled"}>Approve all pending (each logged)</button></div>
   ${table(["ID", "Kind", "Target", "Proposal", "Status", ""], c.actions.map((a) => `<tr><td class="mono">${a.id}</td><td>${esc(a.kind)}</td><td class="mono">${esc(a.target)}</td>
     <td>${esc(a.rationale)}${a.kind === "risk_rescore" ? `<div class="muted">${a.payload.from.join("×").replace(/×(\d+)$/, " = $1")} → ${a.payload.to.join("×").replace(/×(\d+)$/, " = $1")}</div>` : ""}</td>
-    <td>${statusChip(a.status)}</td><td>${a.status === "pending" ? `<button data-ok="${a.id}">Approve</button> <button class="danger" data-no="${a.id}">Reject</button>` : ""}</td></tr>`))}`;
+    <td>${statusChip(a.status)}</td><td>${a.status === "pending" ? `<button data-ok="${a.id}" data-perm="HC6">Approve</button> <button class="danger" data-no="${a.id}" data-perm="HC6">Reject</button>` : ""}</td></tr>`))}`;
   main.querySelectorAll("[data-ce]").forEach((b) => (b.onclick = async () => { b.disabled = true; await api("/api/change/inject", { id: b.dataset.ce }); toast(`${b.dataset.ce} analysed`); vChange(); }));
   main.querySelectorAll("[data-ok]").forEach((b) => (b.onclick = () => approve("HC6", b.dataset.ok)));
   main.querySelectorAll("[data-no]").forEach((b) => (b.onclick = () => approve("HC6", b.dataset.no, "rejected")));
@@ -384,11 +439,11 @@ async function vGov() {
   main.innerHTML = `
   <h1>Governance layer</h1>
   <p class="lead">Named human checkpoints, a complete audit trail of every agent write and human decision, blocked guardrail attempts, and the bias &amp; fairness check on the resident consultation.</p>
-  <div class="row"><a href="/api/export/audit.csv"><button class="ghost">Export audit (CSV)</button></a><a href="/api/export/approvals.csv"><button class="ghost">Export approvals (CSV)</button></a><a href="/api/export/governance.json"><button class="ghost">Export governance pack (JSON)</button></a></div>
+  <div class="row" data-perm="audit.export" data-perm-hide><a href="/api/export/audit.csv"><button class="ghost">Export audit (CSV)</button></a><a href="/api/export/approvals.csv"><button class="ghost">Export approvals (CSV)</button></a><a href="/api/export/governance.json"><button class="ghost">Export governance pack (JSON)</button></a></div>
   <h2>Checkpoint map</h2>
   ${table(["ID", "Checkpoint", "Approver role", "Gates", "Approvals"], g.checkpoints.map((c) => `<tr><td>${c.id}</td><td>${esc(c.name)}</td><td>${esc(c.role)}</td><td>${esc(c.gates)}</td><td>${c.approvals}</td></tr>`))}
   <h2>Bias &amp; fairness check — resident consultation</h2>
-  ${b ? `<div class="row">HC7: ${statusChip(g.bias.status)} ${g.hc7 ? approvalLine(g.hc7) : ""} <button id="hc7">Sign off (HC7)</button></div>
+  ${b ? `<div class="row">HC7: ${statusChip(g.bias.status)} ${g.hc7 ? approvalLine(g.hc7) : ""} <button id="hc7" data-perm="HC7">Sign off (HC7)</button></div>
   <div class="card">${b.findings.map((f) => `<div class="finding ${f.severity === "high" ? "STOP" : ""}"><b>${f.id}</b> ${esc(f.text)} ${cites(f.sources.filter((s) => !s.includes("computed")))}</div>`).join("")}
    <h3>Actions</h3><ul>${b.actions.map((a) => `<li>${esc(a)}</li>`).join("")}</ul></div>
   <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
@@ -431,7 +486,7 @@ async function vEval() {
   const e = await api("/api/eval");
   const m = e.measures || {};
   main.innerHTML = `<h1>Evaluation</h1><p class="lead">The harness runs on a throw-away database: ${e.total || "33"} test cases including the brief's gaps and both Week 12 change events, and the five comparable measures.</p>
-  <div class="row"><button id="ev">Run evaluation (deterministic)</button><button class="ghost" id="evl">Run with LLM</button><span class="muted">${e.generated ? "Last run " + esc(e.generated) : "Not run yet"}</span></div>
+  <div class="row"><button id="ev" data-perm="eval.run">Run evaluation (deterministic)</button><button class="ghost" id="evl" data-perm="eval.run">Run with LLM</button><span class="muted">${e.generated ? "Last run " + esc(e.generated) : "Not run yet"}</span></div>
   ${e.missing ? "" : `<div class="grid">
     <div class="stat"><b>${(m.gap_recall.value * 100).toFixed(0)}%</b><span>Gap recall (${m.gap_recall.hits}/${m.gap_recall.total})</span></div>
     <div class="stat"><b>${(m.invention_rate.value * 100).toFixed(1)}%</b><span>Invention rate (${m.invention_rate.untraceable}/${m.invention_rate.claims_sampled} claims)</span></div>
@@ -447,13 +502,50 @@ async function vEval() {
 }
 
 window.addEventListener("hashchange", () => selectTab(location.hash.slice(1)));
-window.addEventListener("hch-languagechange", () => render());
+window.addEventListener("hch-languagechange", () => { if (ME) render(); });
 function selectTab(t) {
   if (!VIEWS[t]) return;
+  if (!ME) return;
+  if (!can("view." + t)) { toast(`Your role (${ME.role_label}) cannot open this page.`); t = "dashboard"; history.replaceState(null, "", "#dashboard"); }
   current = t;
   document.querySelectorAll("#nav a").forEach((x) => x.classList.toggle("on", x.dataset.tab === t));
   render();
 }
-const VIEWS = { overview: vOverview, planning: vPlanning, pm: vPM, memory: vMemory, risk: vRisk, reports: vReports, change: vChange, governance: vGov, agents: vAgents, eval: vEval };
-api("/api/status").then((s) => { $("#mode").textContent = `${s.llm ? "LLM: DeepSeek" : "LLM off · deterministic"} · PM: ${s.pm_backend}`; }).catch(() => {});
-if (VIEWS[location.hash.slice(1)]) selectTab(location.hash.slice(1)); else render();
+const VIEWS = { dashboard: vDashboard, overview: vOverview, planning: vPlanning, pm: vPM, memory: vMemory, risk: vRisk, reports: vReports, change: vChange, governance: vGov, agents: vAgents, eval: vEval, admin: vAdmin };
+
+/* ------------------------------------------------------------ Login / session */
+function showLogin() {
+  ME = null;
+  $("#login").hidden = false; $("#userbox").hidden = true;
+  document.body.classList.add("locked");
+  setTimeout(() => $("#l-user").focus(), 0);
+}
+function enterApp(user) {
+  ME = user;
+  $("#login").hidden = true; $("#userbox").hidden = false;
+  document.body.classList.remove("locked");
+  document.body.dataset.role = user.role;
+  $("#u-name").textContent = user.name;
+  $("#u-role").textContent = user.role_label;
+  $("#u-avatar").textContent = user.name.slice(0, 1).toUpperCase();
+  $("#u-avatar").className = `avatar r-${user.role}`;
+  document.querySelectorAll("#nav a[data-tab]").forEach((a) => (a.hidden = !user.views.includes(a.dataset.tab)));
+  api("/api/status").then((s) => { $("#mode").textContent = `${s.llm ? "LLM: DeepSeek" : "LLM off · deterministic"} · PM: ${s.pm_backend}`; }).catch(() => {});
+  const t = location.hash.slice(1);
+  selectTab(VIEWS[t] && user.views.includes(t) ? t : "dashboard");
+}
+$("#login-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("#l-err").hidden = true;
+  const r = await fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: $("#l-user").value, password: $("#l-pw").value }) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { $("#l-err").textContent = j.error || "Sign-in failed"; $("#l-err").hidden = false; return; }
+  $("#l-pw").value = "";
+  const m = await api("/api/me"); ROLES_META = m.roles;
+  enterApp(j.user);
+});
+document.querySelectorAll("#login .acct").forEach((b) => (b.onclick = () => { $("#l-user").value = b.dataset.u; $("#l-pw").value = b.dataset.p; $("#l-pw").focus(); }));
+$("#logout").onclick = async () => { await fetch("/api/logout", { method: "POST" }); main.innerHTML = ""; showLogin(); };
+fetch("/api/me").then((r) => (r.ok ? r.json() : null)).then((m) => { if (m && m.user) { ROLES_META = m.roles; enterApp(m.user); } else showLogin(); })
+  .catch(() => showLogin());

@@ -8,6 +8,8 @@ import uuid
 from . import db
 
 CURRENT_RUN = contextvars.ContextVar("current_run", default=None)
+# The logged-in account behind the current HTTP request (set by the server).
+CURRENT_USER = contextvars.ContextVar("current_user", default=None)
 
 # Named human checkpoints. Designed in, not discovered: every agent output that
 # reaches a stakeholder or the PM tool passes one of these.
@@ -63,9 +65,11 @@ def record_approval(checkpoint, item_type, item_id, approver, decision, comment=
     if decision not in ("approved", "rejected"):
         raise ValueError("decision must be approved|rejected")
     role = CHECKPOINTS[checkpoint]["role"]
-    db.ex("INSERT INTO approvals(checkpoint,item_type,item_id,approver,role,decision,comment,ts)"
-          " VALUES(?,?,?,?,?,?,?,?)",
-          (checkpoint, item_type, str(item_id), approver.strip(), role, decision, comment, db.now()))
+    user = CURRENT_USER.get()
+    db.ex("INSERT INTO approvals(checkpoint,item_type,item_id,approver,role,decision,comment,ts,account,account_role)"
+          " VALUES(?,?,?,?,?,?,?,?,?,?)",
+          (checkpoint, item_type, str(item_id), approver.strip(), role, decision, comment, db.now(),
+           user["username"] if user else None, user["role"] if user else None))
     log(approver.strip(), f"checkpoint {checkpoint} {decision}", item_type, item_id,
         detail={"comment": comment, "checkpoint": CHECKPOINTS[checkpoint]["name"]},
         actor_type="human")

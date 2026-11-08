@@ -6,17 +6,22 @@ import os
 import subprocess
 import sys
 import traceback
+from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-from app import (agents, audit, change, config, db, governance, memory, pipeline, planning, pmtool,
-                 reporting, risk, sources, translation)
+from app import (agents, audit, auth, change, config, dashboard, db, governance, memory, pipeline, planning,
+                 pmtool, reporting, risk, sources, translation)
 
 ROOT = config.ROOT
 
 
 def ok(data=None, **kw):
     return 200, dict(data or {}, **kw)
+
+
+def me():
+    return audit.CURRENT_USER.get()
 
 
 def body_of(h):
@@ -73,8 +78,12 @@ def api_source(q, b, sid):
 
 
 def api_approve(q, b):
-    cp, approver, decision = b.get("checkpoint"), b.get("approver", ""), b.get("decision", "approved")
+    cp, decision = b.get("checkpoint"), b.get("decision", "approved")
     comment, item = b.get("comment", ""), b.get("item_id")
+    if cp not in audit.CHECKPOINTS:
+        return 400, {"error": "unknown checkpoint"}
+    auth.require(me(), cp, item or cp)
+    approver = me()["name"]   # signed by the logged-in account, never a typed-in name
     if cp == "HC1":
         audit.record_approval("HC1", "gaps", pipeline.gaps_hash(), approver, decision, comment)
     elif cp == "HC2":
@@ -105,7 +114,16 @@ def api_pm_apply(q, b):
 
 
 def api_pm_board(q, b):
-    return ok({"backend": config.PM_BACKEND, "project": config.JIRA_PROJECT_KEY, "issues": pmtool.board()})
+    base = {"backend": config.PM_BACKEND, "project": config.JIRA_PROJECT_KEY, "site": config.JIRA_BASE_URL or None,
+            "jira_missing": config.JIRA_MISSING, "jira_token_set": bool(config.JIRA_API_TOKEN)}
+    try:
+        return ok(base, issues=pmtool.board())
+    except RuntimeError as e:      # Jira unreachable / misconfigured: show it, don't crash the page
+        return ok(base, issues=[], error=str(e))
+
+
+def api_pm_health(q, b):
+    return ok(pmtool.health())
 
 
 def api_pm_readback(q, b):
@@ -126,9 +144,7 @@ def api_pm_agent_attempt(q, b):
 def api_pm_human(q, b):
     if config.PM_BACKEND != "mock":
         return 400, {"error": "On Jira, humans move items in Jira's own UI."}
-    who = (b.get("human") or "").strip()
-    if not who:
-        return 400, {"error": "named human required"}
+    who = me()["name"]
     pmtool.MockBoard().human_transition(b["key"], b.get("status", "Done"))
     audit.log(who, f"human moved item to {b.get('status', 'Done')}", "pm_issue", b["key"], actor_type="human")
     return ok({"done": True})
@@ -158,9 +174,9 @@ def api_qa_log(q, b):
 
 
 def api_decision(q, b):
-    if not b.get("made_by") or not b.get("text"):
-        return 400, {"error": "text and made_by required"}
-    return ok({"id": memory.record_decision(b["text"], b["made_by"], b.get("source", ""))})
+    if not b.get("text"):
+        return 400, {"error": "text required"}
+    return ok({"id": memory.record_decision(b["text"], me()["name"], b.get("source", ""))})
 
 
 def api_risk(q, b):
@@ -255,11 +271,32 @@ def api_eval_run(q, b):
     return api_eval_latest(q, b)
 
 
+def api_me(q, b):
+    return ok({"user": me(), "roles": {k: {"label": v["label"], "label_zh": v["label_zh"]} for k, v in auth.ROLES.items()}})
+
+
+def api_dashboard(q, b):
+    return ok(dashboard.build(me()))
+
+
+def api_admin_users(q, b):
+    return ok(auth.users_overview())
+
+
+def api_admin_user_save(q, b):
+    if b.get("create"):
+        auth.create_user(b.get("username"), b.get("display_name"), b.get("role"), b.get("password"), by=me()["username"])
+        return ok({"created": True})
+    return ok({"changes": auth.update_user(b.get("username"), me()["username"], role=b.get("role"), active=b.get("active"),
+                                           password=b.get("password") or None, display_name=b.get("display_name"))})
+
+
 ROUTES = {
     ("GET", "/api/status"): api_status, ("POST", "/api/run"): api_run, ("POST", "/api/reset"): api_reset,
     ("GET", "/api/planning"): api_planning, ("POST", "/api/approve"): api_approve,
     ("GET", "/api/pm/preview"): api_pm_preview, ("POST", "/api/pm/apply"): api_pm_apply,
     ("GET", "/api/pm/board"): api_pm_board, ("GET", "/api/pm/readback"): api_pm_readback,
+    ("GET", "/api/pm/health"): api_pm_health,
     ("POST", "/api/pm/agent_attempt"): api_pm_agent_attempt, ("POST", "/api/pm/human"): api_pm_human,
     ("POST", "/api/ask"): api_ask, ("POST", "/api/translate"): api_translate,
     ("POST", "/api/translate-batch"): api_translate_batch,
@@ -269,7 +306,38 @@ ROUTES = {
     ("GET", "/api/change"): api_change, ("POST", "/api/change/inject"): api_change_inject,
     ("GET", "/api/governance"): api_governance, ("GET", "/api/agents"): api_agents,
     ("GET", "/api/eval"): api_eval_latest, ("POST", "/api/eval/run"): api_eval_run,
+    ("GET", "/api/me"): api_me, ("GET", "/api/dashboard"): api_dashboard,
+    ("GET", "/api/admin/users"): api_admin_users, ("POST", "/api/admin/users"): api_admin_user_save,
 }
+
+# Permission required for each route (None = any logged-in user). Enforced server-side.
+PERMS = {
+    "/api/status": None, "/api/me": None, "/api/translate": None, "/api/translate-batch": None,
+    "/api/dashboard": "view.dashboard",
+    ("POST", "/api/run"): "run.pipeline", "/api/reset": "reset.demo",
+    "/api/planning": "view.planning", "/api/approve": None,   # checkpoint checked in handler
+    "/api/pm/preview": "pm.write", "/api/pm/apply": "pm.write", "/api/pm/board": "view.pm",
+    "/api/pm/readback": "view.pm", "/api/pm/health": "view.pm", "/api/pm/agent_attempt": "pm.write", "/api/pm/human": "pm.write",
+    "/api/ask": "memory.ask", "/api/qa": "view.memory", "/api/decision": "memory.decide",
+    "/api/risk": "view.risk", "/api/reports": "view.reports", "/api/reports/generate": "reports.generate",
+    "/api/reports/plant": "reports.plant", "/api/change": "view.change", "/api/change/inject": "change.inject",
+    "/api/governance": "view.governance", "/api/agents": "view.agents",
+    "/api/eval": "view.eval", "/api/eval/run": "eval.run",
+    "/api/admin/users": "users.manage",
+    "/api/source/": None, "/api/report/": "view.reports", "/api/change/note/": "view.change",
+    "/api/export/": "audit.export",
+}
+
+
+def required_perm(method, path):
+    if (method, path) in PERMS:
+        return PERMS[(method, path)]
+    if path in PERMS:
+        return PERMS[path]
+    for pre in ("/api/source/", "/api/report/", "/api/change/note/", "/api/export/"):
+        if path.startswith(pre):
+            return PERMS[pre]
+    return "users.manage"   # unknown API paths default to the most restrictive permission
 PREFIX = [("GET", "/api/source/", api_source), ("GET", "/api/report/", api_report),
           ("GET", "/api/change/note/", api_change_note)]
 
@@ -279,9 +347,11 @@ class H(BaseHTTPRequestHandler):
         if os.environ.get("HCH_VERBOSE"):
             super().log_message(fmt, *args)
 
-    def _send(self, code, payload, ctype="application/json"):
+    def _send(self, code, payload, ctype="application/json", headers=()):
         data = payload if isinstance(payload, (bytes, bytearray)) else json.dumps(payload, ensure_ascii=False, default=str).encode()
         self.send_response(code)
+        for k, v in headers:
+            self.send_header(k, v)
         self.send_header("Content-Type", ctype + ("; charset=utf-8" if "json" in ctype or "text" in ctype else ""))
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Cache-Control", "no-store")
@@ -291,9 +361,30 @@ class H(BaseHTTPRequestHandler):
     def _dispatch(self, method):
         u = urlparse(self.path)
         q = parse_qs(u.query)
+        audit.CURRENT_USER.set(None)   # never carry an identity across keep-alive requests
+        if not u.path.startswith("/api/"):
+            return self._static(u.path) if method == "GET" else self._send(404, {"error": "not found"})
+        token = SimpleCookie(self.headers.get("Cookie") or "").get(auth.COOKIE)
+        token = token.value if token else None
         try:
+            if u.path == "/api/login" and method == "POST":
+                b = body_of(self)
+                tok, user = auth.login(b.get("username"), b.get("password"), self.client_address[0])
+                cookie = f"{auth.COOKIE}={tok}; HttpOnly; SameSite=Strict; Path=/; Max-Age={auth.SESSION_HOURS * 3600}"
+                return self._send(200, {"user": user}, headers=[("Set-Cookie", cookie)])
+            if u.path == "/api/logout" and method == "POST":
+                auth.logout(token)
+                return self._send(200, {"ok": True}, headers=[("Set-Cookie", f"{auth.COOKIE}=; Path=/; Max-Age=0")])
+            user = auth.user_for(token)
+            if not user:
+                return self._send(401, {"error": "Please log in", "login": True})
+            audit.CURRENT_USER.set(user)
+            perm = required_perm(method, u.path)
+            if perm:
+                auth.require(user, perm, u.path)
             if u.path.startswith("/api/export/"):
                 name = u.path.rsplit("/", 1)[-1]
+                audit.log(user["username"], "audit exported", "export", name, actor_type="human")
                 if name == "audit.csv":
                     return self._send(200, governance.audit_export_csv().encode(), "text/csv")
                 if name == "approvals.csv":
@@ -311,11 +402,16 @@ class H(BaseHTTPRequestHandler):
                 if m == method and u.path.startswith(pre):
                     code, data = f(q, b, u.path[len(pre):])
                     return self._send(code, data)
-            if method == "GET":
-                return self._static(u.path)
             return self._send(404, {"error": "not found"})
+        except auth.AuthError as e:
+            return self._send(401, {"error": str(e), "login": True})
+        except auth.Forbidden as e:
+            return self._send(403, {"error": str(e)})
         except (ValueError, KeyError) as e:
             return self._send(400, {"error": str(e)})
+        except RuntimeError as e:      # external tool (Jira / LLM) failure: visible, logged, not a crash
+            audit.log("server", "external error", "http", u.path, outcome="error", detail={"error": str(e)}, actor_type="system")
+            return self._send(502, {"error": str(e)})
         except Exception as e:  # failures are visible, not silent
             traceback.print_exc()
             audit.log("server", "error", "http", u.path, outcome="error", detail={"error": str(e)}, actor_type="system")
@@ -338,6 +434,7 @@ class H(BaseHTTPRequestHandler):
 
 def main():
     info = pipeline.init()
+    auth.ensure_seed()
     if info["facts_rejected"]:
         print("WARNING facts rejected (quote not in source):", info["facts_rejected"])
     if not db.q("SELECT code FROM wbs LIMIT 1"):

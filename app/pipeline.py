@@ -49,7 +49,8 @@ def status():
     ph = planning.plan_hash() if n("wbs") else None
     return {
         "llm": llm.available(),
-        "pm_backend": config.PM_BACKEND,
+        "pm_backend": config.PM_BACKEND, "jira_site": config.JIRA_BASE_URL or None,
+        "jira_project": config.JIRA_PROJECT_KEY, "jira_missing": config.JIRA_MISSING if config.JIRA_API_TOKEN else None,
         "counts": {"sources": n("sources"), "facts": n("facts"), "gaps": n("gaps"), "conflicts": n("conflicts"),
                    "wbs": n("wbs"), "milestones": n("milestones"), "risks": n("risks"), "whatifs": n("whatifs"),
                    "reports": n("reports", "WHERE planted IS NULL"), "pm_issues": n("pm_issues"),

@@ -2,7 +2,8 @@
 (Gap recall, Invention rate, Re-run stability, Critic catch rate, Cost & time per run).
 Runs against a throw-away SQLite file so it never touches the demo database.
     python3 eval/run_eval.py            (uses DeepSeek if DEEPSEEK_API_KEY is set)
-    python3 eval/run_eval.py --no-llm   (deterministic)"""
+    python3 eval/run_eval.py --no-llm   (deterministic)
+    The PM tool is always the local mock board unless --jira is passed."""
 import json
 import os
 import sys
@@ -16,6 +17,10 @@ TMP = Path(tempfile.mkdtemp(prefix="hch-eval-"))
 os.environ["HCH_DB"] = str(TMP / "eval.db")
 if "--no-llm" in sys.argv:
     os.environ["HCH_DISABLE_LLM"] = "1"
+# The harness creates, re-syncs and re-runs plans many times: never against a real Jira
+# project unless explicitly asked with --jira.
+if "--jira" not in sys.argv:
+    os.environ["PM_BACKEND"] = "mock"
 
 from app import (audit, change, critic, db, governance, llm, memory, pipeline, planning, pmtool,  # noqa: E402
                  reporting, risk, sources)

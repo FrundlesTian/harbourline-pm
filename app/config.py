@@ -38,7 +38,10 @@ JIRA_BASE_URL = os.environ.get("JIRA_BASE_URL", "").rstrip("/")   # https://<sit
 JIRA_EMAIL = os.environ.get("JIRA_EMAIL", "")
 JIRA_API_TOKEN = os.environ.get("JIRA_API_TOKEN", "")
 JIRA_PROJECT_KEY = os.environ.get("JIRA_PROJECT_KEY", "HCH")
-PM_BACKEND = os.environ.get("PM_BACKEND", "jira" if (JIRA_BASE_URL and JIRA_API_TOKEN) else "mock")
+JIRA_REQUIRED = {"JIRA_BASE_URL": JIRA_BASE_URL, "JIRA_EMAIL": JIRA_EMAIL, "JIRA_API_TOKEN": JIRA_API_TOKEN}
+JIRA_MISSING = [k for k, v in JIRA_REQUIRED.items() if not v]
+# Jira is used automatically once the site URL, account e-mail and API token are all set.
+PM_BACKEND = os.environ.get("PM_BACKEND", "mock" if JIRA_MISSING else "jira")
 
 EXT_KEY_PREFIX = "ext-HCH-"          # stable external key label prefix
 AI_LABEL = "ai-generated"            # guardrail: every agent-created item carries this

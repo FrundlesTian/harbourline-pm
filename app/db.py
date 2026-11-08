@@ -84,7 +84,18 @@ CREATE TABLE IF NOT EXISTS handoffs (
 CREATE TABLE IF NOT EXISTS bias_checks (
   id TEXT PRIMARY KEY, created_at TEXT, result TEXT, status TEXT);
 CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT);
+CREATE TABLE IF NOT EXISTS users (
+  username TEXT PRIMARY KEY, display_name TEXT, role TEXT, pw_salt TEXT, pw_hash TEXT,
+  active INT DEFAULT 1, created_at TEXT, last_login TEXT);
+CREATE TABLE IF NOT EXISTS sessions (
+  token TEXT PRIMARY KEY, username TEXT, created_at TEXT, expires_at TEXT, last_seen TEXT, ip TEXT);
 """
+
+# Columns added after the first release; applied to existing databases on connect.
+MIGRATIONS = [
+    ("approvals", "account", "TEXT"),
+    ("approvals", "account_role", "TEXT"),
+]
 
 
 def now():
@@ -99,6 +110,10 @@ def conn():
             _conn = sqlite3.connect(str(config.DB_PATH), check_same_thread=False)
             _conn.row_factory = sqlite3.Row
             _conn.executescript(SCHEMA)
+            for table, col, typ in MIGRATIONS:
+                cols = {r[1] for r in _conn.execute(f"PRAGMA table_info({table})")}
+                if col not in cols:
+                    _conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {typ}")
             _conn.commit()
         return _conn
 

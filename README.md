@@ -11,11 +11,54 @@ python3 server.py          # 或 ./run.sh
 ```
 
 * 首次启动会自动完成以下步骤：导入 data pack，校验事实库（共 78 条事实，每条的 quote 都必须能在原文中找到），然后跑一次完整流程。
-* 页面右上角的 **Approver** 栏必须填写本人姓名。所有人工检查点（HC1–HC7）都会记录审批人的姓名。
+* 打开页面后需要**登录**。审批人就是当前登录账号，所有人工检查点（HC1–HC7）都会记录审批人姓名、账号和账号角色，不能再手填别人的名字。
 * **LLM（可选）**：在 `.env` 中填写 `DEEPSEEK_API_KEY` 即可启用 DeepSeek。不填时系统以确定性模式完整运行（成本为零，重跑结果完全一致）。LLM 产出的内容必须先经过引用校验和 Critic 的数字溯源检查，才会被采用；不通过就丢弃，并记入审计日志。
-* **Jira（可选）**：配置 `JIRA_BASE_URL / JIRA_EMAIL / JIRA_API_TOKEN / JIRA_PROJECT_KEY` 后写入真实的 Jira Cloud Free；不配置时写入本地 SQLite 模拟看板。两者使用同一份数据契约。
+* **Jira（可选）**：配置 `JIRA_BASE_URL / JIRA_EMAIL / JIRA_API_TOKEN / JIRA_PROJECT_KEY` 后写入真实的 Jira Cloud；三项必填缺任何一项都使用本地 SQLite 模拟看板，两者使用同一份数据契约。详见下文“Jira 联动”。
 * 运行评估：`python3 eval/run_eval.py --no-llm`，结果写入 `eval/results/latest.md` 和 `latest.json`。也可以在 UI 的 Evaluation 页点击运行。
 * **界面语言**：页面右上角的“中文 / EN”按钮可即时切换界面，选择会保存在浏览器中。导航、操作控件、提示、状态及内置确定性报告提供中文译文；启用 DeepSeek 时，动态生成的项目文字也会按需翻译。来源引文和用户输入保留原文，便于核对证据。
+
+## 登录、角色与权限隔离
+
+首次启动会创建四个演示账号（密码可通过 `.env` 中的 `HCH_ADMIN_PASSWORD / HCH_PM_PASSWORD / HCH_LEADER_PASSWORD / HCH_SUPERVISOR_PASSWORD` 覆盖，正式使用前请修改）：
+
+| 账号 / 默认密码 | 角色 | 可见页面 | 可执行操作 | 可审批检查点 |
+|---|---|---|---|---|
+| `admin` / `admin123` | System Admin 系统管理员 | 全部，含 Admin console | 全部，含重置演示、用户管理 | HC1–HC7 |
+| `pm` / `pm1234` | Project Manager 项目经理 | 面板、总览、规划、PM tool、记忆、风险、报告、变更、Agent cards | 运行流程、写看板、问答、记录决策、注入变更、重新生成报告 | HC1 HC2 HC3 HC6 |
+| `leader` / `leader123` | Group Leader 组长 | 面板、总览、规划、记忆、风险、报告、变更、Agent cards | 问答、重新生成报告、植入审查故障 | HC4 HC5 |
+| `supervisor` / `super123` | Supervisor 监督员 | 面板、总览、记忆、风险、报告、变更、治理、Agent cards、评估 | 问答、查看/导出审计、运行评估 | HC7 |
+
+* **权限在服务器端强制执行**（`app/auth.py`，`server.py` 中的 `PERMS` 表）。界面只是把无权的按钮置灰、把无权的页面从导航中隐藏；直接调用 API 也会得到 403，并在审计日志中记为 `access denied`（outcome = blocked）。
+* 可视化面板的数据接口 `/api/dashboard` 按角色裁剪：例如组长拿不到审计活动数据，监督员拿不到里程碑和看板数据。
+* 会话使用 HttpOnly + SameSite=Strict cookie，密码使用 PBKDF2-SHA256 加盐存储。登录、登出、登录失败、用户变更都会写入审计日志。
+* 管理员可在 **Admin console** 中创建用户、修改角色、停用账号、重置密码；系统会阻止停用最后一个管理员或降级自己。
+
+## Jira 联动
+
+1. 在 `.env` 中填写 `JIRA_BASE_URL=https://<site>.atlassian.net`、`JIRA_EMAIL`（API token 所属账号的邮箱）、`JIRA_API_TOKEN`、`JIRA_PROJECT_KEY`，然后重启服务。
+2. 运行 `python3 scripts/jira_check.py` 做只读检查：账号、项目、事项类型映射、Blocks 关联类型。也可以在 PM tool 页点 **Test Jira connection**。
+3. 在 PM tool 页先 **Preview**（只读），再由项目经理或管理员做 **HC3** 审批并写入。写入完成后系统会立即读回校验。
+
+实现要点（`app/pmtool.py`）：
+
+* **类型映射与语言无关**：按 Jira 的 hierarchyLevel 识别 Epic（1）、普通事项（0）和子任务（-1），创建时用类型 id，所以中文站点（长篇故事 / 任务 / 子任务）无需配置。如需指定，可用 `JIRA_TYPE_EPIC / TASK / SUBTASK` 覆盖。
+* **不重复创建**：Jira 的 JQL 搜索索引会滞后几秒。系统用一次 JQL 搜索找出现有事项，再对已写入过的 key 调用 bulkfetch（强一致读）补齐，所以写入后立即再同步也不会重复创建。实测一次完整同步约 150 次 API 调用；原来是每个事项各查一次。
+* **依赖关系**：里程碑之间的依赖写成 Blocks 链接，已存在的链接会跳过不再创建。第一次创建链接后会读回校验方向，方向反了就自动更正（删除 agent 刚建的那条错误链接，并记入审计）。
+* **人工标签保留**：HC6 批准后加上的 `change-*` 标签，在之后的同步中会保留，不会被覆盖。
+* **护栏不变**：Agent 只能创建、更新和评论，不能关闭、删除事项或把事项移到 Done。“Done”按状态类别判断，不依赖状态名，所以中文状态名也能识别。
+* **容错**：遇到 429/503 会按 Retry-After 重试；401/403/404 会附带排查提示。Jira 出错时页面显示错误信息，不会崩溃。
+* 评估工具（`eval/run_eval.py`）始终使用模拟看板，不会往真实项目写测试数据；如确需对 Jira 运行，加 `--jira` 参数。
+
+## 可视化面板（Dashboard）
+
+登录后默认进入，内容包括：
+
+* **端到端流程图**：数据源 → 六个 Agent → 七个人工检查点 → 看板/读者，按泳道排列。节点颜色反映实时状态（已产出 / 未运行 / 需关注 / Critic STOP），检查点显示已批准 / 待审批 / 已拒绝，机器交接用动态虚线表示；点击节点直接跳转到对应模块，悬停查看详情。
+* **HC1–HC7 检查点轨道**：每个检查点的当前状态、最近审批人和负责角色。
+* **图表**：风险热力图、Top 风险评分、Sponsor 问题状态分布、WBS 层级、报告版本状态、看板状态、各检查点审批次数、按账号统计的被拒访问、审计活动时间分布（agent / human / system）、里程碑时间线与依赖关系。
+* **管理员演示引导**（仅 admin）：把下面的 8 步演示路径做成进度清单，根据数据库实时判断每步是否完成，并标注负责角色。
+
+**Admin console** 另外提供：角色 → 检查点审批权限关系图、完整权限矩阵、用户管理和访问日志。
 
 ## 需求 → 实现对照
 
@@ -44,6 +87,8 @@ python3 server.py          # 或 ./run.sh
 | 每次完整运行的成本与时间 | 约 0.2 s，确定性模式下 0 token。启用 DeepSeek 后，token 数和费用会记在 `runs` 表和 Overview 页 |
 
 ## 演示路径（约 10 分钟录屏）
+
+以 `admin` 登录，可在 Dashboard / Admin console 的演示引导中逐步完成；也可以中途退出，换用对应角色登录，展示权限隔离（例如组长无法批准 HC2，项目经理看不到治理页和审计导出）。
 
 1. **Overview**：点 Run，展示 hand-off 记录和运行耗时。
 2. **Planning**：浏览 gaps、conflicts、WBS 的可追溯性和 flagged 项，然后做 HC1 和 HC2 审批。

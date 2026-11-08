@@ -17,14 +17,15 @@
       <button type="button" id="lang-zh" aria-pressed="false">中文</button>
       <button type="button" id="lang-en" aria-pressed="true">EN</button>
     </div>
-    <label for="approver">Approver (named human)</label>
-    <input id="approver" placeholder="Your name" autocomplete="name">
     <span id="mode" class="chip"></span>
+    <span id="userbox" hidden><span class="avatar" id="u-avatar"></span><span><b id="u-name" data-no-translate></b><small id="u-role"></small></span>
+      <button type="button" class="ghost" id="logout">Sign out</button></span>
   </div>
 </header>
 <div class="shell">
   <nav id="nav">
-    <a data-tab="overview" class="on">Overview</a>
+    <a data-tab="dashboard" class="on">Dashboard</a>
+    <a data-tab="overview">Overview</a>
     <a data-tab="planning">1 · Planning</a>
     <a data-tab="pm">2 · PM tool</a>
     <a data-tab="memory">3 · Memory</a>
@@ -34,12 +35,29 @@
     <a data-tab="governance">Governance</a>
     <a data-tab="agents">Agent cards</a>
     <a data-tab="eval">Evaluation</a>
+    <a data-tab="admin" class="adminlink">Admin console</a>
   </nav>
   <main id="main"></main>
+</div>
+<div id="login" hidden>
+  <form class="login-card" id="login-form" autocomplete="on">
+    <div class="brand"><span class="logo">H</span><div><b>Harbourline AI PM</b><small>Sign in to continue</small></div></div>
+    <label>Username<input id="l-user" autocomplete="username" required></label>
+    <label>Password<input id="l-pw" type="password" autocomplete="current-password" required></label>
+    <div id="l-err" class="lerr" hidden></div>
+    <button type="submit">Sign in</button>
+    <div class="demo-accounts"><div class="muted small">Demo accounts (click to fill)</div>
+      <button type="button" class="acct" data-u="admin" data-p="admin123"><span class="rolechip r-admin">System Admin</span><small>admin · sees everything, manages users</small></button>
+      <button type="button" class="acct" data-u="pm" data-p="pm1234"><span class="rolechip r-project_manager">Project Manager</span><small>pm · planning, PM tool, change · HC1 HC2 HC3 HC6</small></button>
+      <button type="button" class="acct" data-u="leader" data-p="leader123"><span class="rolechip r-group_leader">Group Leader</span><small>leader · risk &amp; reporting · HC4 HC5</small></button>
+      <button type="button" class="acct" data-u="supervisor" data-p="super123"><span class="rolechip r-supervisor">Supervisor</span><small>supervisor · governance, audit, eval · HC7</small></button>
+    </div>
+  </form>
 </div>
 <div id="modal" hidden><div class="modal-card"><button class="x" id="modal-x" aria-label="Close">×</button><div id="modal-body"></div></div></div>
 <div id="toast" hidden></div>
 <script src="/i18n.js"></script>
+<script src="/dashboard.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>
