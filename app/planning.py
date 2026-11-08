@@ -1,14 +1,23 @@
 """Module 1 - Planning Agent.
 Scope statement, gap/Sponsor-Question register (with assumptions), conflict register,
-WBS to Level 3 with dictionary and traceability, and a milestone plan with dependencies."""
+WBS to Level 3 with dictionary and traceability, and a milestone plan with dependencies.
+
+When DeepSeek is configured (default), scope, Sponsor Questions, WBS and milestones are
+GENERATED from the brief, sponsor answers and data pack (`_llm_plan`), then validated:
+unknown source ids are dropped, WBS hierarchy and traceability are enforced, milestone
+dependencies must point backwards, and a date is kept only if a cited source states it.
+The curated tables below (SCOPE, GAPS, WBS, MILESTONES) are the BASELINE: used when the
+LLM is off (HCH_GENERATION=baseline or no key) or when the generated plan fails validation.
+The conflict detectors are deterministic computations over the fact store in both modes."""
+import re
 from datetime import date
 
-from . import audit, db, llm, sources
+from . import audit, critic, db, gen, llm, sources
 from .agents import AGENT_CARDS
 
 AGENT = "planning"
 
-# ------------------------------------------------------------------ scope
+# ------------------------------------------------------------------ baseline: scope
 SCOPE = [
     ("SC01", "Upgraded multi-purpose sports hall", "BRIEF-p3-4", "in"),
     ("SC02", "New early childhood centre (~100 children) run by Little Harbour Learning", "BRIEF-p3-4", "in"),
@@ -302,58 +311,250 @@ def _change_annotations(text):
     return [seg for seg in (text or "").split(" | ") if "(CE-" in seg]
 
 
-def run():
-    """Full planning pass. Deterministic: same inputs -> same ids and content.
+# ------------------------------------------------------------------ LLM generation
+GAP_STATUS = ("Open", "Partially answered", "Answered", "Answered by data pack", "Answered (date open)")
+SCOPE_KINDS = ("in", "objective", "delivery", "constraint", "out")
+
+
+def _code_key(code):
+    return tuple(int(x) for x in code.split("."))
+
+
+def _sys():
+    return "You are the Planning Agent for the Harbourline Community Hub Refurbishment. " + gen.GROUND
+
+
+def _gen_scope_gaps():
+    user = (f"SOURCES:\n{gen.block(['BRIEF-p3-', 'SA-', 'NRF-', 'EDC-', 'DEL-', 'LL-'])}\n\n"
+            "TASK. Draft (a) the scope statement and (b) the register of Questions for the Sponsor.\n"
+            "(a) scope: 12-20 lines. Use id SC01, SC02 ... for in-scope work, objectives, delivery approach and "
+            "constraints, and OS01, OS02 ... for work the sponsor answers put explicitly OUT of scope. "
+            f"kind is one of {list(SCOPE_KINDS)}. source is the single chunk id that states the line.\n"
+            "(b) gaps: 15-25 decisions a planner needs that the BRIEF leaves missing, vague or contradictory. "
+            "'why' says what the brief is missing; 'sources' cites the BRIEF chunk(s). Then check the sponsor answers "
+            f"and data pack: status is one of {list(GAP_STATUS)}; 'answer' summarises what the sources say "
+            "(empty when Open) and 'answer_sources' cites them. sponsor_only is true when only the sponsor can decide. "
+            f"tags are chosen only from {gen.TAGS}.\n"
+            'Return {"scope":[{"id":"SC01","text":"","source":"","kind":""}],'
+            '"gaps":[{"id":"GQ01","category":"","question":"","why":"","sources":[],"sponsor_only":true,'
+            '"status":"","answer":"","answer_sources":[],"tags":[]}]}')
+    data, _ = llm.cached_json(AGENT, _sys(), user, max_tokens=6000)
+    if not data:
+        return None, None, "no JSON from LLM (scope/gaps)"
+    scope, seen = [], set()
+    for s in data.get("scope", []):
+        sid, src = str(s.get("id", "")), gen.known([s.get("source")])
+        if not re.fullmatch(r"(SC|OS)\d\d", sid) or sid in seen or not src or not str(s.get("text", "")).strip():
+            continue
+        kind = s.get("kind") if s.get("kind") in SCOPE_KINDS else ("out" if sid.startswith("OS") else "in")
+        text = s["text"].strip()
+        if kind == "out" and not text.upper().startswith("OUT"):
+            text = "OUT: " + text
+        seen.add(sid)
+        scope.append((sid, text, src[0], kind))
+    gaps, seen = [], set()
+    for g in data.get("gaps", []):
+        gid, srcs = str(g.get("id", "")), gen.known(g.get("sources"))
+        if not re.fullmatch(r"GQ\d\d", gid) or gid in seen or not srcs or not str(g.get("question", "")).strip():
+            continue
+        status = g.get("status") if g.get("status") in GAP_STATUS else "Open"
+        ans_src = gen.known(g.get("answer_sources"))
+        if status != "Open" and not ans_src:          # an answer must be sourced
+            status = "Open"
+        seen.add(gid)
+        gaps.append((gid, str(g.get("category", "")).strip() or "General", g["question"].strip(), str(g.get("why", "")).strip(),
+                     srcs, 1 if g.get("sponsor_only", True) else 0, status,
+                     str(g.get("answer", "")).strip() if status != "Open" else "", ans_src if status != "Open" else [],
+                     gen.tags(g.get("tags"))))
+    if sum(1 for s in scope if s[3] != "out") < 8:
+        return None, None, f"too few valid scope lines ({len(scope)})"
+    if len(gaps) < 10:
+        return None, None, f"too few valid Sponsor Questions ({len(gaps)})"
+    return scope, gaps, ""
+
+
+def _gen_wbs(scope):
+    lines = "\n".join(f"{s[0]} ({s[3]}): {s[1]}" for s in scope)
+    user = (f"SCOPE LINES (the only valid scope_refs):\n{lines}\n\n"
+            f"CONTRACT DELIVERABLES (valid deliverable_refs are the D numbers):\n{gen.block(['DEL-D'])}\n\n"
+            f"SOURCES (context):\n{gen.block(['BRIEF-p3-', 'SA-', 'NRF-'])}\n\n"
+            "TASK. Build the Work Breakdown Structure to Level 3 with a dictionary entry per element. 50-80 elements, "
+            "codes '1', '1.1', '1.1.1' (no Level 4). 5-8 Level-1 elements; every Level-1 has Level-2 children and every "
+            "Level-2 has 2-4 Level-3 children. Cover: project management, reporting and grant/budget control; design "
+            "(design-and-build); consultation and operators; phasing and keeping the Hub open; construction for every "
+            "in-scope element; completion, handover and grant close-out.\n"
+            "Each element: scope_refs = the SC ids it traces to (never an OS id); deliverable_refs = D numbers (e.g. "
+            "'D04'); owner = an organisation or role named in the sources (e.g. KHB, Council PM, Finance, Legal, "
+            "Community Engagement, Estate Development), or 'UNASSIGNED (<why>)' when the sources say no owner; "
+            f"acceptance = acceptance criterion (may be empty); tags only from {gen.TAGS}.\n"
+            "Work a planner might be tempted to add but that traces only to an OS line or to no scope line goes in "
+            "'rejected' (name, reason, sources) instead of the WBS.\n"
+            'Return {"wbs":[{"code":"1","name":"","scope_refs":[],"deliverable_refs":[],"owner":"","acceptance":"","tags":[]}],'
+            '"rejected":[{"name":"","reason":"","sources":[]}]}')
+    data, _ = llm.cached_json(AGENT, _sys(), user, max_tokens=8000)
+    if not data:
+        return None, None, "no JSON from LLM (WBS)"
+    dels = {d["id"][4:] for d in db.q("SELECT id FROM sources WHERE id LIKE 'DEL-D%'")}
+    rows, codes = {}, set()
+    for w in data.get("wbs", []):
+        code = str(w.get("code", "")).strip().rstrip(".")
+        if not re.fullmatch(r"\d+(\.\d+){0,2}", code) or code in codes or not str(w.get("name", "")).strip():
+            continue
+        codes.add(code)
+        owner = str(w.get("owner", "")).strip() or "UNASSIGNED (owner not stated in sources)"
+        rows[code] = (code, w["name"].strip(), [str(r) for r in w.get("scope_refs", []) if str(r).strip()],
+                      sorted({str(d).replace("DEL-", "") for d in w.get("deliverable_refs", [])} & dels),
+                      owner, str(w.get("acceptance", "") or "").strip(), gen.tags(w.get("tags")))
+    wbs = [rows[c] for c in sorted(rows, key=_code_key)
+           if "." not in c or c.rsplit(".", 1)[0] in rows]          # orphans (missing parent) are dropped
+    l1 = sum(1 for w in wbs if "." not in w[0])
+    l3 = sum(1 for w in wbs if w[0].count(".") == 2)
+    if l1 < 4 or l3 < 25:
+        return None, None, f"WBS too shallow (L1={l1}, L3={l3})"
+    rejected = [(str(r.get("name", "")).strip(), str(r.get("reason", "")).strip() or "No scope line",
+                 gen.known(r.get("sources"))) for r in data.get("rejected", []) if str(r.get("name", "")).strip()]
+    return wbs, rejected, ""
+
+
+def _date_supported(d, srcs):
+    """Keep a generated date only if a cited source states it (critic date tracer)."""
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", d):
+        return not critic.trace_claim({"text": d, "cites": srcs})
+    if re.fullmatch(r"\d{4}-\d{2}", d):
+        y, m = d.split("-")
+        mon = critic.MONTHS[int(m) - 1]
+        texts = [(sources.get(s) or {}).get("text", "").lower() for s in srcs]
+        return any(y in t and (mon in t or mon[:3] in t) for t in texts)
+    return False
+
+
+def _gen_milestones(wbs):
+    lines = "\n".join(f"{w[0]} {w[1]}" for w in wbs)
+    user = (f"WBS (the only valid wbs codes):\n{lines}\n\n"
+            f"SOURCES:\n{gen.block(['BRIEF-p3-5', 'BRIEF-p3-6', 'SA-', 'EDC-', 'DEL-', 'NRF-', 'PR3-', 'LL-L04'])}\n\n"
+            "TASK. Milestone plan with dependencies: 12-20 milestones in relative time from site possession "
+            "('M+0', 'M+4.4', 'M+22') until the sponsor gives dates. ids MS01, MS02 ... listed in dependency order: "
+            "depends_on may only name EARLIER milestones. 'date' is ISO yyyy-mm-dd (or yyyy-mm) ONLY when a cited "
+            "source states that date; otherwise null, rel 'TBD' or 'after MSnn', and the note says NOT FOUND. Where "
+            "sources give different dates for the same milestone, keep the earliest commitment as date and write "
+            "'CONFLICT: ...' in the note citing all sources. Include site possession, baseline programme, the grant "
+            "tranche claims T1-T4 and their conditions, consultation, closures decision, operator appointment and "
+            "agreements, lift package, childcare handover, practical completion and Hub fully open. "
+            f"tags only from {gen.TAGS}.\n"
+            'Return {"milestones":[{"id":"MS01","name":"","wbs":"","rel":"","date":null,"depends_on":[],'
+            '"sources":[],"note":"","tags":[]}]}')
+    data, _ = llm.cached_json(AGENT, _sys(), user, max_tokens=5000)
+    if not data:
+        return None, "no JSON from LLM (milestones)"
+    codes = {w[0] for w in wbs}
+    out, ids = [], []
+    for m in data.get("milestones", []):
+        mid, srcs = str(m.get("id", "")), gen.known(m.get("sources"))
+        wcode = str(m.get("wbs", "")).strip()
+        if not re.fullmatch(r"MS\d\d", mid) or mid in ids or wcode not in codes or not srcs:
+            continue
+        note = str(m.get("note", "") or "").strip()
+        rel = str(m.get("rel", "") or "").strip() or "TBD"
+        d = m.get("date")
+        d = str(d).strip() if d not in (None, "", "null") else None
+        if d and not _date_supported(d, srcs):
+            note = (note + " | " if note else "") + f"LLM date {d} rejected: not stated in cited sources (NOT FOUND)."
+            d = None
+        if not d and not rel.startswith(("TBD", "after", "Q4", "MS")) and "NOT FOUND" not in note:
+            note = (note + " | " if note else "") + "Date NOT FOUND in sources."
+        deps = [x for x in m.get("depends_on", []) if x in ids]          # backwards only -> acyclic
+        ids.append(mid)
+        out.append((mid, str(m.get("name", "")).strip() or mid, wcode, rel, d, deps, srcs, note, gen.tags(m.get("tags"))))
+    if len(out) < 8:
+        return None, f"too few valid milestones ({len(out)})"
+    return out, ""
+
+
+def _llm_plan():
+    scope, gaps, why = _gen_scope_gaps()
+    if why:
+        return None, why
+    wbs, rejected, why = _gen_wbs(scope)
+    if why:
+        return None, why
+    ms, why = _gen_milestones(wbs)
+    if why:
+        return None, why
+    return {"scope": scope, "gaps": gaps, "wbs": wbs, "rejected": rejected, "milestones": ms}, ""
+
+
+def run(use_llm=True):
+    """Full planning pass. LLM-generated (validated) when DeepSeek is configured, curated
+    baseline otherwise; both are deterministic for the same inputs (temperature 0 + cache).
     Human-approved change annotations (HC6) on milestones and gaps are carried over."""
     keep_ms = {m["id"]: _change_annotations(m["note"]) for m in db.q("SELECT id, note FROM milestones")}
     keep_gap = {g["id"]: (_change_annotations(g["answer"]), [s for s in db.L(g["answer_sources"]) if s.startswith("CE-")])
                 for g in db.q("SELECT id, answer, answer_sources FROM gaps")}
+    plan, why = (_llm_plan() if llm.generation_enabled(use_llm) else
+                 (None, "LLM not configured" if not llm.available() else "baseline mode requested"))
+    if plan:
+        scope, gaps, wbs_rows, milestones = plan["scope"], plan["gaps"], plan["wbs"], plan["milestones"]
+        flagged_extra = [(n, r + " - flagged, not kept", s) for n, r, s in plan["rejected"]]
+        gap_origin = "llm"
+    else:
+        scope, gaps, wbs_rows, milestones = SCOPE, GAPS, WBS, MILESTONES
+        flagged_extra = [(n, (f"Traces only to out-of-scope line {ref}" if ref else "No scope line in brief or sponsor answers")
+                          + " - flagged, not kept", s) for n, ref, s in CANDIDATES]
+        gap_origin = "checklist"
     db.ex("DELETE FROM scope_lines")
-    db.exmany("INSERT INTO scope_lines(id,text,source_id,kind) VALUES(?,?,?,?)", SCOPE)
+    db.exmany("INSERT INTO scope_lines(id,text,source_id,kind) VALUES(?,?,?,?)", scope)
     db.ex("DELETE FROM gaps")
     rows = []
-    for (gid, cat, qn, why, srcs, sponsor_only, status, ans, ans_src, tags) in GAPS:
+    for (gid, cat, qn, why_, srcs, sponsor_only, status, ans, ans_src, tags) in gaps:
         assumption = "" if status.startswith("Answered") else f"ASSUMPTION A-{gid[2:]}: until the sponsor answers, plan treats this as unresolved and tracks it as a risk/decision."
-        rows.append((gid, cat, qn, why, db.J(srcs), sponsor_only, status, ans, db.J(ans_src), assumption, "checklist", db.J(tags)))
+        rows.append((gid, cat, qn, why_, db.J(srcs), sponsor_only, status, ans, db.J(ans_src), assumption, gap_origin, db.J(tags)))
     db.exmany("INSERT INTO gaps VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", rows)
-    n_llm = _llm_extra_gaps()
+    n_llm = _llm_extra_gaps() if (not plan and llm.generation_enabled(use_llm)) else 0
     n_conf = detect_conflicts()
 
-    # WBS with traceability check
-    scope_ids = {s[0] for s in SCOPE}
+    # WBS with traceability check: an element whose scope refs are missing or not all
+    # in-scope lines is flagged, not kept (applies to generated and baseline WBS alike)
+    scope_ids = {s[0] for s in scope if s[3] != "out"}
     db.ex("DELETE FROM wbs")
     db.ex("DELETE FROM wbs_flagged")
-    kept = []
-    for i, (code, name, refs, dels, owner, acc, tags) in enumerate(WBS):
-        if not refs or not set(refs) <= scope_ids:
-            db.ex("INSERT OR REPLACE INTO wbs_flagged VALUES(?,?,?)", (name, "no scope line", db.J(refs)))
+    kept, kept_codes = [], set()
+    for i, (code, name, refs, dels, owner, acc, tags) in enumerate(wbs_rows):
+        parent = code.rsplit(".", 1)[0] if "." in code else None
+        if not refs or not set(refs) <= scope_ids or (parent and parent not in kept_codes):
+            why_f = "no scope line" if not refs else ("traces to a line that is not in scope" if not set(refs) <= scope_ids
+                                                       else f"parent {parent} not kept")
+            db.ex("INSERT OR REPLACE INTO wbs_flagged VALUES(?,?,?)", (name, why_f + " - flagged, not kept", db.J(refs)))
             continue
         level = code.count(".") + 1
-        parent = code.rsplit(".", 1)[0] if "." in code else None
-        src = [s for (sid, _, s, _) in SCOPE if sid in refs] + [f"DEL-{d}" for d in dels]
+        src = [s for (sid, _, s, _) in scope if sid in refs] + [f"DEL-{d}" for d in dels]
         kept.append((code, level, parent, name, _dictionary(code, name, refs, dels, owner, acc), db.J(refs),
                      db.J(dels), owner, acc, db.J(sorted(set(src))), db.J(tags), i))
+        kept_codes.add(code)
     db.exmany("INSERT INTO wbs VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", kept)
-    for name, ref, src in CANDIDATES:
-        reason = (f"Traces only to out-of-scope line {ref}" if ref else "No scope line in brief or sponsor answers")
-        db.ex("INSERT OR REPLACE INTO wbs_flagged VALUES(?,?,?)", (name, reason + " - flagged, not kept", db.J(src)))
+    for name, reason, src in flagged_extra:
+        db.ex("INSERT OR REPLACE INTO wbs_flagged VALUES(?,?,?)", (name, reason, db.J(src)))
 
+    milestones = [m for m in milestones if m[2] in kept_codes]
+    ms_ids = {m[0] for m in milestones}
     db.ex("DELETE FROM milestones")
     db.exmany("INSERT INTO milestones VALUES(?,?,?,?,?,?,?,?,?,?)",
-              [(m[0], m[1], m[2], m[3], m[4], db.J(m[5]), db.J(m[6]), " | ".join([m[7]] + keep_ms.get(m[0], [])).strip(" |"),
-                db.J(m[8]), i) for i, m in enumerate(MILESTONES)])
+              [(m[0], m[1], m[2], m[3], m[4], db.J([d for d in m[5] if d in ms_ids]), db.J(m[6]),
+                " | ".join([m[7]] + keep_ms.get(m[0], [])).strip(" |"), db.J(m[8]), i) for i, m in enumerate(milestones)])
     for gid, (ann, srcs) in keep_gap.items():
         if ann:
             g = db.q1("SELECT answer, answer_sources FROM gaps WHERE id=?", (gid,))
             if g:
                 db.ex("UPDATE gaps SET answer=?, answer_sources=? WHERE id=?",
                       (" | ".join([g["answer"]] + ann).strip(" |"), db.J(sorted(set(db.L(g["answer_sources"]) + srcs))), gid))
-    audit.log(AGENT, "write plan", "plan", "baseline",
-              detail={"scope": len(SCOPE), "gaps": len(GAPS) + n_llm, "conflicts": n_conf, "wbs": len(kept),
-                      "milestones": len(MILESTONES)})
+    mode = "llm" if plan else "baseline"
+    gen.set_origin(AGENT, mode, "" if plan else why, scope=len(scope), gaps=len(gaps), wbs=len(kept), milestones=len(milestones))
+    audit.log(AGENT, "write plan", "plan", mode,
+              detail={"scope": len(scope), "gaps": len(gaps) + n_llm, "conflicts": n_conf, "wbs": len(kept),
+                      "milestones": len(milestones), "origin": mode})
     audit.handoff(AGENT, "risk", "wbs+milestones", len(kept))
-    return {"scope_lines": len(SCOPE), "gaps": len(GAPS) + n_llm, "llm_gaps": n_llm, "conflicts": n_conf,
-            "wbs": len(kept), "flagged": len(db.q("SELECT name FROM wbs_flagged")), "milestones": len(MILESTONES)}
+    return {"origin": mode, "fallback_reason": "" if plan else why, "scope_lines": len(scope), "gaps": len(gaps) + n_llm,
+            "llm_gaps": n_llm, "conflicts": n_conf, "wbs": len(kept), "flagged": len(db.q("SELECT name FROM wbs_flagged")),
+            "milestones": len(milestones)}
 
 
 def _dictionary(code, name, refs, dels, owner, acc):

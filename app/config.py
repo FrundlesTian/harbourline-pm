@@ -32,6 +32,11 @@ DEEPSEEK_MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
 PRICE_IN_PER_M = float(os.environ.get("DEEPSEEK_PRICE_IN_PER_M", "0.28"))
 PRICE_OUT_PER_M = float(os.environ.get("DEEPSEEK_PRICE_OUT_PER_M", "0.42"))
 LLM_DISABLED = os.environ.get("HCH_DISABLE_LLM", "") == "1"
+# "llm" (default): when DeepSeek is configured, agents generate their core outputs from the
+# sources and deterministic validators check them; the curated baseline is the fallback.
+# "baseline": always use the curated, hand-checked baseline (reproducible regression mode).
+GENERATION_MODE = os.environ.get("HCH_GENERATION", "llm").strip().lower()
+LLM_FRESH = os.environ.get("HCH_LLM_FRESH", "") == "1"     # bypass the LLM response cache
 
 # --- PM tool -----------------------------------------------------------------
 JIRA_BASE_URL = os.environ.get("JIRA_BASE_URL", "").rstrip("/")   # https://<site>.atlassian.net

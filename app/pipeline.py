@@ -4,7 +4,7 @@ the chain and anything a stakeholder or the PM tool sees."""
 import hashlib
 import time
 
-from . import audit, config, db, facts_catalog, governance, llm, memory, planning, reporting, risk, sources
+from . import audit, config, db, facts_catalog, gen, governance, llm, memory, planning, reporting, risk, sources
 
 
 def init():
@@ -21,8 +21,8 @@ def init():
 def full_run(use_llm=True, as_of="2027-03-31"):
     t0 = time.time()
     with audit.Run("full") as run:
-        out = {"planning": planning.run()}
-        out["risk"] = risk.run()
+        out = {"planning": planning.run(use_llm=use_llm)}
+        out["risk"] = risk.run(use_llm=use_llm)
         governance.bias_check()
         out["reports"] = [{"id": r["id"], "status": r["status"]} for r in reporting.run_all(as_of, use_llm and llm.available())]
         out["seconds"] = round(time.time() - t0, 3)
@@ -49,6 +49,7 @@ def status():
     ph = planning.plan_hash() if n("wbs") else None
     return {
         "llm": llm.available(),
+        "generation": "llm" if llm.generation_enabled() else "baseline", "origins": gen.origins(),
         "pm_backend": config.PM_BACKEND, "jira_site": config.JIRA_BASE_URL or None,
         "jira_project": config.JIRA_PROJECT_KEY, "jira_missing": config.JIRA_MISSING if config.JIRA_API_TOKEN else None,
         "counts": {"sources": n("sources"), "facts": n("facts"), "gaps": n("gaps"), "conflicts": n("conflicts"),

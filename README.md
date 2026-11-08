@@ -12,10 +12,27 @@ python3 server.py          # 或 ./run.sh
 
 * 首次启动会自动完成以下步骤：导入 data pack，校验事实库（共 78 条事实，每条的 quote 都必须能在原文中找到），然后跑一次完整流程。
 * 打开页面后需要**登录**。审批人就是当前登录账号，所有人工检查点（HC1–HC7）都会记录审批人姓名、账号和账号角色，不能再手填别人的名字。
-* **LLM（可选）**：在 `.env` 中填写 `DEEPSEEK_API_KEY` 即可启用 DeepSeek。不填时系统以确定性模式完整运行（成本为零，重跑结果完全一致）。LLM 产出的内容必须先经过引用校验和 Critic 的数字溯源检查，才会被采用；不通过就丢弃，并记入审计日志。
+* **LLM 生成（默认）**：在 `.env` 中填写 `DEEPSEEK_API_KEY` 后，核心产出由 DeepSeek **从原始资料生成**，详见下文“LLM 生成与基线回退”。不填 key（或设 `HCH_GENERATION=baseline`）时，使用人工整理的基线内容，以确定性模式完整运行（成本为零）。
 * **Jira（可选）**：配置 `JIRA_BASE_URL / JIRA_EMAIL / JIRA_API_TOKEN / JIRA_PROJECT_KEY` 后写入真实的 Jira Cloud；三项必填缺任何一项都使用本地 SQLite 模拟看板，两者使用同一份数据契约。详见下文“Jira 联动”。
 * 运行评估：`python3 eval/run_eval.py --no-llm`，结果写入 `eval/results/latest.md` 和 `latest.json`。也可以在 UI 的 Evaluation 页点击运行。
 * **界面语言**：页面右上角的“中文 / EN”按钮可即时切换界面，选择会保存在浏览器中。导航、操作控件、提示、状态及内置确定性报告提供中文译文；启用 DeepSeek 时，动态生成的项目文字也会按需翻译。来源引文和用户输入保留原文，便于核对证据。
+
+## LLM 生成与基线回退
+
+配置 DeepSeek 后（默认），各 Agent 的核心产出都由 LLM 根据 brief、Sponsor Answers 和 data pack 生成，再由确定性校验把关：
+
+| 产出 | LLM 生成什么 | 确定性校验 | 回退 |
+|---|---|---|---|
+| Planning（`app/planning.py`） | scope、Sponsor Questions（含状态/答案）、WBS L1–L3 + dictionary、milestone 与依赖 | 来源 id 必须存在；WBS 层级和 scope 可追溯性（不可追溯的标为 flagged）；依赖只能指向前序 milestone；日期必须出现在所引来源中，否则改为 NOT FOUND/TBD | 人工整理的基线计划 |
+| Risk（`app/risk.py`） | 风险登记册（基于 seed register 修复缺陷 + 新增风险） | L、I 为 1–5；WBS 链接和来源必须存在；必须有 owner 和 trigger；缺少供应商变更风险时自动补上 | 基线登记册 |
+| Reporting（`app/reporting.py`） | EDC / NRF 报告的每一行（引用 fact/来源 id） | Critic 追溯每个数字、日期、人名；STOP 时把问题和失败行反馈给 Agent 修订，最多 3 轮 | 确定性模板 |
+| Change（`app/change.py`） | 成本/工期影响、Sponsor 决策、UNRESOLVED、风险重新评分建议 | 成本行经 Critic 追溯（1 轮修订，仍无法追溯的丢弃）；决策须有来源；重新评分只能针对已存在的风险 | CE-01 / CE-02 基线分析 |
+
+* 冲突检测、seed register 质检、what-if 计算、受影响项识别和 stale 判定仍是确定性计算。
+* 每个产出用哪条路径生成会显示在 Overview 页的“产出来源”中，回退原因写入审计日志（outcome = fallback）。
+* LLM 响应按输入缓存（temperature 0），所以同一数据库上重跑结果完全一致、不消耗 token，HC2/HC4 审批和看板不会因重跑而变化；`HCH_LLM_FRESH=1` 可强制重新生成。注意：DeepSeek 在不同的全新数据库上不能保证逐字一致，因此 "fresh-DB identical" 只在基线模式下成立。
+* 实测（全新数据库、完整流程）：约 110 秒，约 7.4 万 token，约 US$0.024；之后重跑 0 token。
+* 评估工具加 `--no-llm` 运行基线回归（33 个案例）；部分案例针对基线中的固定 ID（如 R01、MS12），在 LLM 模式下可能不适用。
 
 ## 登录、角色与权限隔离
 

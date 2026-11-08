@@ -1,9 +1,16 @@
 """Module 4 - Risk & What-if Agent.
 Scored register (L x I) with owners, triggers, linked WBS and sources; seed-register QA;
 three what-ifs with cost and schedule impact and stated assumptions; automatic
-re-scoring proposals when a change event alters the plan."""
+re-scoring proposals when a change event alters the plan.
+
+With DeepSeek configured (default) the register is GENERATED from the seed register,
+pack evidence and the WBS hand-off (`_llm_register`) and validated (scores 1-5, WBS
+links must exist, sources must exist, owner + trigger required). REGISTER below is the
+curated baseline used when the LLM is off or the generated register fails validation.
+Seed QA and what-if arithmetic are deterministic calculations in both modes."""
 import csv
 import io
+import re
 from datetime import date, timedelta
 
 from . import audit, config, db, sources
@@ -118,12 +125,79 @@ def seed_qa():
     return out
 
 
-def run():
+def _llm_register():
+    """Generate the register from the seed register + pack evidence + WBS (hand-off).
+    Returns (rows in REGISTER tuple form, reason-if-rejected)."""
+    from . import gen, llm
+    wbs = db.q("SELECT code,name,tags FROM wbs ORDER BY sort")
+    wl = "\n".join(f"{w['code']} {w['name']} {db.L(w['tags'])}" for w in wbs)
+    conf = "\n".join(f"{c['id']} {c['topic']}: {c['detail']}" for c in db.q("SELECT * FROM conflicts"))
+    system = "You are the Risk & What-if Agent for the Harbourline Community Hub Refurbishment. " + gen.GROUND
+    user = (f"SEED RISK REGISTER (2025, inherited):\n{gen.block(['RISK-'])}\n\n"
+            f"WBS (the only valid wbs_links):\n{wl}\n\nCONFLICTS ALREADY DETECTED:\n{conf}\n\n"
+            f"SOURCES:\n{gen.block(['BRIEF-p3-', 'BRIEF-p6-', 'SA-', 'EDC-', 'PR1-', 'PR2-', 'PR3-', 'DEL-', 'LL-', 'NRF-'])}\n\n"
+            "TASK. Produce the current scored risk register (18-26 risks).\n"
+            "1. Start from the seed register and keep its ids R01-R14. Repair its defects and say so in 'note': an owner "
+            "who has left or is TBC/blank gets an owner proposed from the sources; a score that is not likelihood x impact "
+            "is re-scored on evidence; duplicates are merged into the lower id (omit the duplicate id); a risk marked "
+            "Closed that the pack shows has happened is re-opened.\n"
+            "2. Add new risks R15, R16 ... for threats the pack evidences (grant conditions, programme, operators, "
+            "reporting deadlines, design progress, consultation bias, contingency) - one risk per threat.\n"
+            "3. Include one risk that a vendor or free-tier change affects the AI PM system itself (cite the brief "
+            "chunk that asks for it, tag 'tooling').\n"
+            "Each risk: likelihood and impact are integers 1-5 justified by the cited evidence; owner is a role or "
+            "person named in the sources; trigger is an observable event or threshold; mitigation is specific; "
+            "wbs_links lists 1-4 WBS codes the risk threatens; sources are chunk ids; status like 'Open', "
+            "'Open - realised in part', 'REOPENED - realised'; origin is one of seed, seed+pack, pack, brief; "
+            f"tags only from {gen.TAGS}.\n"
+            'Return {"risks":[{"id":"R01","category":"","description":"","owner":"","likelihood":3,"impact":4,'
+            '"trigger":"","mitigation":"","wbs_links":[],"sources":[],"status":"","origin":"","note":"","tags":[]}]}')
+    data, _ = llm.cached_json(AGENT, system, user, max_tokens=7000)
+    if not data:
+        return None, "no JSON from LLM (risk register)"
+    codes = {w["code"] for w in wbs}
+    out, ids = [], set()
+    for r in data.get("risks", []):
+        rid = str(r.get("id", ""))
+        try:
+            L, I = int(r.get("likelihood")), int(r.get("impact"))
+        except (TypeError, ValueError):
+            continue
+        links = [w for w in r.get("wbs_links", []) if w in codes]
+        srcs = gen.known(r.get("sources"))
+        owner, trig = str(r.get("owner", "")).strip(), str(r.get("trigger", "")).strip()
+        if (not re.fullmatch(r"R\d\d", rid) or rid in ids or not (1 <= L <= 5 and 1 <= I <= 5) or not links
+                or not srcs or not owner or not trig or not str(r.get("description", "")).strip()):
+            continue
+        ids.add(rid)
+        origin = r.get("origin") if r.get("origin") in ("seed", "seed+pack", "pack", "brief") else "pack"
+        out.append((rid, str(r.get("category", "")).strip() or "General", r["description"].strip(), owner, L, I, trig,
+                    str(r.get("mitigation", "")).strip() or "NOT FOUND - mitigation to be agreed", links, srcs,
+                    str(r.get("status", "")).strip() or "Open", "llm/" + origin, str(r.get("note", "") or "").strip(),
+                    gen.tags(r.get("tags"))))
+    if len(out) < 12:
+        return None, f"too few valid risks ({len(out)})"
+    if not any("tooling" in t[13] for t in out):           # brief: vendor change must be logged as a risk
+        pm = sorted((w["code"] for w in wbs if w["code"].startswith("1.") and w["code"].count(".") == 2)) or [wbs[0]["code"]]
+        nid = "R%02d" % (max(int(t[0][1:]) for t in out) + 1)
+        out.append((nid, "Delivery system", "Vendor/tool change affects the AI PM system (brief: log vendor change as a risk)",
+                    "Team tool owner", 2, 2, "Vendor announces shutdown or free-tier change of a tool we use",
+                    "Re-check tools in Week 12; keep mock board fallback", pm[:1], ["BRIEF-p6-5"], "Open", "llm/brief",
+                    "Added by validator: generated register had no vendor-change risk", ["tooling"]))
+    return out, ""
+
+
+def run(use_llm=True):
+    from . import gen, llm
     wbs = {w["code"] for w in db.q("SELECT code FROM wbs")}
     if not wbs:
         raise RuntimeError("Risk agent needs the WBS hand-off from Planning first")
+    reg, why = (_llm_register() if llm.generation_enabled(use_llm) else
+                (None, "LLM not configured" if not llm.available() else "baseline mode requested"))
+    mode = "llm" if reg else "baseline"
+    register = reg or REGISTER
     changed = 0
-    for (rid, cat, desc, owner, L, I, trig, mit, links, srcs, status, origin, note, tags) in REGISTER:
+    for (rid, cat, desc, owner, L, I, trig, mit, links, srcs, status, origin, note, tags) in register:
         bad = [w for w in links if w not in wbs]
         missing = [s for s in srcs if not sources.get(s)]
         if bad or missing:
@@ -144,10 +218,17 @@ def run():
               "wbs_links,sources,status,origin,note,tags,version,stale) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0)",
               (*row.values(), ver))
         changed += 1
-    audit.log(AGENT, "write risk register", "risk_register", "baseline", detail={"rows_written": changed})
+    keep = {r[0] for r in register}
+    for old in db.q("SELECT id, origin FROM risks"):
+        if old["id"] not in keep and not old["origin"].startswith("change:"):
+            db.ex("DELETE FROM risks WHERE id=?", (old["id"],))        # local register row, superseded by this run
+            audit.log(AGENT, "risk superseded (not in new register)", "risk", old["id"], detail={"origin": mode})
+    gen.set_origin(AGENT, mode, "" if reg else why, risks=len(register))
+    audit.log(AGENT, "write risk register", "risk_register", mode, detail={"rows_written": changed, "origin": mode})
     n = run_whatifs()
-    audit.handoff(AGENT, "reporting", "risk_register+whatifs", len(REGISTER))
-    return {"risks": len(db.q("SELECT id FROM risks")), "written": changed, "whatifs": n, "seed_findings": len(seed_qa())}
+    audit.handoff(AGENT, "reporting", "risk_register+whatifs", len(register))
+    return {"origin": mode, "fallback_reason": "" if reg else why, "risks": len(db.q("SELECT id FROM risks")),
+            "written": changed, "whatifs": n, "seed_findings": len(seed_qa())}
 
 
 def top5():
@@ -262,8 +343,26 @@ RESCORE_RULES = {
 }
 
 
-def rescore_proposals(event_id):
+def rescore_proposals(event_id, generated=None):
+    """Re-score proposals for an event: the Change Agent's generated proposals when it has
+    them (validated: risk exists, 1-5 scale, actually changes), else the baseline rules."""
     out = []
+    generated_register = bool(db.q1("SELECT 1 FROM risks WHERE origin LIKE 'llm/%' LIMIT 1"))
+    if generated:
+        for p in generated:
+            m = re.match(r"\s*(R\d\d)\b", str(p.get("risk", "")))
+            cur = db.q1("SELECT * FROM risks WHERE id=?", (m.group(1),)) if m else None
+            try:
+                L, I = int(p.get("likelihood")), int(p.get("impact"))
+            except (TypeError, ValueError):
+                continue
+            if cur and 1 <= L <= 5 and 1 <= I <= 5 and (L, I) != (cur["likelihood"], cur["impact"]) and p.get("rationale"):
+                out.append({"risk": cur["id"], "from": [cur["likelihood"], cur["impact"], cur["score"]],
+                            "to": [L, I, L * I], "rationale": str(p["rationale"]).strip()})
+        if out:
+            return out
+    if generated_register:
+        return out      # baseline rules name baseline risk ids; never apply them to a generated register
     for rid, L, I, why in RESCORE_RULES.get(event_id, []):
         cur = db.q1("SELECT * FROM risks WHERE id=?", (rid,))
         if cur:

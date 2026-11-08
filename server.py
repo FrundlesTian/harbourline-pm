@@ -10,7 +10,7 @@ from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-from app import (agents, audit, auth, change, config, dashboard, db, governance, memory, pipeline, planning,
+from app import (agents, audit, auth, change, config, dashboard, db, governance, llm, memory, pipeline, planning,
                  pmtool, reporting, risk, sources, translation)
 
 ROOT = config.ROOT
@@ -438,6 +438,9 @@ def main():
     if info["facts_rejected"]:
         print("WARNING facts rejected (quote not in source):", info["facts_rejected"])
     if not db.q("SELECT code FROM wbs LIMIT 1"):
+        if llm.generation_enabled():
+            print("First run: generating plan, risk register and reports with DeepSeek "
+                  "(a few minutes the first time; responses are cached, so later runs are fast)...")
         pipeline.full_run()
     print(f"Harbourline PM system on http://{config.HOST}:{config.PORT}  "
           f"(LLM: {'DeepSeek ' + config.DEEPSEEK_MODEL if config.DEEPSEEK_API_KEY else 'off - deterministic mode'}, "

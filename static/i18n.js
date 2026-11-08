@@ -150,7 +150,11 @@
     "Plant & run Critic": "植入并运行审查", "No reports": "暂无报告",
     "Planted fault:": "植入故障：", "Release to readers (HC5)": "发布给读者（HC5）",
     "Critic findings": "审查结果", "LLM summary (checked)": "LLM 摘要（已核验）",
-    "deterministic": "确定性模式", "critic_passed": "审查通过", "critic_stopped": "审查停止",
+    "deterministic": "确定性模式", "LLM-generated, Critic-checked": "LLM 生成，已经 Critic 审查",
+    "Who produced the outputs": "产出来源", "LLM-generated, validated": "LLM 生成，已校验", "baseline fallback": "基线回退",
+    "not run": "未运行", "Planning": "规划", "Risk register": "风险登记册", "Reports": "报告", "Change analysis": "变更分析",
+    "LLM-generated outputs are checked before use: unknown sources, WBS codes and tags are dropped, dates must appear in a cited source, every report number is traced by the Critic (up to 3 revision rounds). The curated baseline is used only when the LLM is off or its output fails these checks. Responses are cached, so re-runs on the same inputs are identical.":
+      "LLM 生成的内容在使用前都要校验：未知的来源、WBS 编码和标签会被丢弃；日期必须出现在所引用的来源中；报告中的每个数字都由 Critic 溯源（最多 3 轮修订）。只有在 LLM 关闭或其产出未通过校验时，才使用人工整理的基线。响应会被缓存，因此相同输入重跑结果一致。", "critic_passed": "审查通过", "critic_stopped": "审查停止",
     "Progress against the baseline programme": "相对于基线计划的进展",
     "Expenditure to date against eligible cost": "累计支出与合格成本对比",
     "Status of each tranche condition": "各笔拨款条件状态",

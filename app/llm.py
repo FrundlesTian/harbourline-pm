@@ -2,16 +2,55 @@
 The LLM is an optional helper: every agent has a deterministic path, and every LLM
 output is checked (citations must exist, numbers must trace to facts) before use.
 Each agent's Role and Context are fixed system prompts (see agents.AGENT_CARDS)."""
+import hashlib
 import json
 import time
 import urllib.error
 import urllib.request
 
-from . import audit, config
+from . import audit, config, db
 
 
 def available():
     return bool(config.DEEPSEEK_API_KEY) and not config.LLM_DISABLED
+
+
+def generation_enabled(use_llm=True):
+    """True when agents should GENERATE their core outputs with the LLM (default whenever
+    DeepSeek is configured). HCH_GENERATION=baseline forces the curated baseline."""
+    return bool(use_llm) and available() and config.GENERATION_MODE != "baseline"
+
+
+def cached_json(agent, system, user, max_tokens=4000, fresh=False):
+    """chat_json with a persistent cache keyed on (model, prompt). Temperature is 0 and the
+    cache makes a re-run on the same inputs return the same output, so plan hashes (HC2),
+    risk hashes (HC4) and PM-board content stay stable. fresh=True forces a new call."""
+    key = "llmcache:" + agent + ":" + hashlib.sha256(
+        (config.DEEPSEEK_MODEL + "\x00" + system + "\x00" + user).encode()).hexdigest()[:32]
+    if not (fresh or config.LLM_FRESH):
+        hit = db.kv_get(key)
+        if hit is not None:
+            audit.log(agent, "llm cache hit", "llm", key[-12:])
+            return hit, {"cached": True}
+    data, usage = chat_json(agent, system, user, max_tokens=max_tokens)
+    if data is not None:
+        db.kv_set(key, data)
+    return data, usage
+
+
+def cached_chat(agent, system, user, max_tokens=1200, fresh=False):
+    """Plain-text chat with the same persistent cache as cached_json (stable re-runs)."""
+    key = "llmcache:" + agent + ":txt:" + hashlib.sha256(
+        (config.DEEPSEEK_MODEL + "\x00" + system + "\x00" + user).encode()).hexdigest()[:32]
+    if not (fresh or config.LLM_FRESH):
+        hit = db.kv_get(key)
+        if hit is not None:
+            audit.log(agent, "llm cache hit", "llm", key[-12:])
+            return hit, {"cached": True}
+    text, usage = chat(agent, system, user, max_tokens=max_tokens)
+    if text is not None:
+        db.kv_set(key, text)
+    return text, usage
 
 
 def chat(agent, system, user, temperature=0.0, max_tokens=1200, json_mode=False):
@@ -29,7 +68,7 @@ def chat(agent, system, user, temperature=0.0, max_tokens=1200, json_mode=False)
                  "Authorization": "Bearer " + config.DEEPSEEK_API_KEY})
     t0 = time.time()
     try:
-        with urllib.request.urlopen(req, timeout=90) as r:
+        with urllib.request.urlopen(req, timeout=max(90, max_tokens // 20)) as r:
             data = json.loads(r.read().decode("utf-8"))
     except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError) as e:
         audit.log(agent, "llm call", "llm", config.DEEPSEEK_MODEL, outcome="error",
