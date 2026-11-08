@@ -1,0 +1,227 @@
+{
+  "status": "signed off",
+  "actions": [
+    "Translate and include all non-English comments in the summary (glosses provided).",
+    "Show theme priorities both raw and age-re-weighted; do not present raw counts as 'what residents want'.",
+    "Recommend a second, multilingual paper / door-to-door round targeted at 55+ residents (Seabreeze L06).",
+    "Flag repeated identical wording; Community Engagement to confirm whether submissions are independent.",
+    "Hold the consultation summary (D15) for HC7 sign-off before it is handed to KHB as design input."
+  ],
+  "age": {
+    "18-24": 21,
+    "25-34": 57,
+    "35-44": 43,
+    "45-54": 31,
+    "55-64": 37,
+    "65+": 25
+  },
+  "by_age_theme": {
+    "18-24": {
+      "Active ageing / seniors": 1,
+      "Childcare": 8,
+      "Communication & trust": 1,
+      "Food court affordability": 3,
+      "Lifts & barrier-free access": 3,
+      "Noise & working hours": 1,
+      "Rooftop garden (support)": 1,
+      "Sports hall": 1
+    },
+    "25-34": {
+      "Active ageing / seniors": 5,
+      "Childcare": 18,
+      "Communication & trust": 8,
+      "Food court affordability": 7,
+      "Lifts & barrier-free access": 4,
+      "Noise & working hours": 7,
+      "Rooftop garden (support)": 1,
+      "Sports hall": 9
+    },
+    "35-44": {
+      "Active ageing / seniors": 1,
+      "Childcare": 11,
+      "Communication & trust": 4,
+      "Food court affordability": 3,
+      "Lifts & barrier-free access": 14,
+      "Noise & working hours": 3,
+      "Rooftop garden (oppose)": 11,
+      "Rooftop garden (support)": 1,
+      "Sports hall": 4
+    },
+    "45-54": {
+      "Active ageing / seniors": 9,
+      "Childcare": 3,
+      "Communication & trust": 8,
+      "Food court affordability": 2,
+      "Lifts & barrier-free access": 3,
+      "Noise & working hours": 3,
+      "Rooftop garden (support)": 3,
+      "Sports hall": 2
+    },
+    "55-64": {
+      "Active ageing / seniors": 13,
+      "Childcare": 1,
+      "Communication & trust": 12,
+      "Food court affordability": 1,
+      "Lifts & barrier-free access": 7,
+      "Noise & working hours": 4,
+      "Rooftop garden (support)": 3
+    },
+    "65+": {
+      "Active ageing / seniors": 7,
+      "Childcare": 4,
+      "Communication & trust": 5,
+      "Lifts & barrier-free access": 6,
+      "Noise & working hours": 1,
+      "Rooftop garden (oppose)": 1,
+      "Rooftop garden (support)": 1,
+      "Sports hall": 3
+    }
+  },
+  "channel": {
+    "online": 160,
+    "paper": 23,
+    "townhall": 31
+  },
+  "findings": [
+    {
+      "id": "B1",
+      "severity": "high",
+      "sources": [
+        "RC (computed)",
+        "LL-L06"
+      ],
+      "text": "Online channel supplied 160/214 responses (74.8%); 115 of them from under-45s. Seabreeze saw the same skew (L06)."
+    },
+    {
+      "id": "B2",
+      "severity": "high",
+      "sources": [
+        "RC (computed)",
+        "BRIEF-p3-4"
+      ],
+      "text": "Residents 65+ gave 25 responses (11.7%) although they are the main users of the active ageing centre; under-45s gave 121 (56.5%). Estate age profile: NOT FOUND in pack, so true representativeness cannot be computed."
+    },
+    {
+      "id": "B3",
+      "severity": "high",
+      "sources": [
+        "RC (computed)"
+      ],
+      "text": "19 non-English responses (zh 10, ms 6, ta 3) all come via paper/town hall (18 from residents 45+) and are about seniors, lifts or noise. An English-only summary would drop 11 of 36 active-ageing comments and 6 of 37 lift/access comments."
+    },
+    {
+      "id": "B4",
+      "severity": "medium",
+      "sources": [
+        "RC (computed)"
+      ],
+      "text": "Theme priority by raw count: ['Childcare', 'Communication & trust', 'Lifts & barrier-free access', 'Active ageing / seniors']; with each age band weighted equally: ['Childcare', 'Active ageing / seniors', 'Lifts & barrier-free access', 'Communication & trust']. Order CHANGES under re-weighting - report both."
+    },
+    {
+      "id": "B5",
+      "severity": "medium",
+      "sources": [
+        "RC (computed)"
+      ],
+      "text": "Only 25 distinct comment texts across 214 responses - heavy repetition; check for template or campaign submissions before weighting."
+    },
+    {
+      "id": "B6",
+      "severity": "low",
+      "sources": [
+        "RC (computed)",
+        "EDC-4.5"
+      ],
+      "text": "Mean rating by age band: {'25-34': 3.19, '65+': 3.28, '55-64': 3.24, '18-24': 3.48, '45-54': 3.45, '35-44': 2.65}. Town hall drew about 40 residents (EDC 4.5) and gave 31 responses."
+    }
+  ],
+  "language": {
+    "en": 195,
+    "ms": 6,
+    "ta": 3,
+    "zh": 10
+  },
+  "n": 214,
+  "rank_english_only": [
+    "Childcare",
+    "Communication & trust",
+    "Lifts & barrier-free access",
+    "Active ageing / seniors",
+    "Sports hall",
+    "Noise & working hours",
+    "Food court affordability",
+    "Rooftop garden (oppose)",
+    "Rooftop garden (support)"
+  ],
+  "rank_raw": [
+    "Childcare",
+    "Communication & trust",
+    "Lifts & barrier-free access",
+    "Active ageing / seniors",
+    "Noise & working hours",
+    "Sports hall",
+    "Food court affordability",
+    "Rooftop garden (oppose)",
+    "Rooftop garden (support)"
+  ],
+  "rank_reweighted": [
+    "Childcare",
+    "Active ageing / seniors",
+    "Lifts & barrier-free access",
+    "Communication & trust",
+    "Noise & working hours",
+    "Sports hall",
+    "Food court affordability",
+    "Rooftop garden (support)",
+    "Rooftop garden (oppose)"
+  ],
+  "rating_by_age": {
+    "18-24": 3.48,
+    "25-34": 3.19,
+    "35-44": 2.65,
+    "45-54": 3.45,
+    "55-64": 3.24,
+    "65+": 3.28
+  },
+  "themes_english_only": {
+    "Active ageing / seniors": 25,
+    "Childcare": 45,
+    "Communication & trust": 38,
+    "Food court affordability": 16,
+    "Lifts & barrier-free access": 31,
+    "Noise & working hours": 17,
+    "Rooftop garden (oppose)": 12,
+    "Rooftop garden (support)": 10,
+    "Sports hall": 19
+  },
+  "themes_raw": {
+    "Active ageing / seniors": 36,
+    "Childcare": 45,
+    "Communication & trust": 38,
+    "Food court affordability": 16,
+    "Lifts & barrier-free access": 37,
+    "Noise & working hours": 19,
+    "Rooftop garden (oppose)": 12,
+    "Rooftop garden (support)": 10,
+    "Sports hall": 19
+  },
+  "themes_reweighted": {
+    "Active ageing / seniors": 0.18,
+    "Childcare": 0.2061,
+    "Communication & trust": 0.1772,
+    "Food court affordability": 0.0712,
+    "Lifts & barrier-free access": 0.1774,
+    "Noise & working hours": 0.0808,
+    "Rooftop garden (oppose)": 0.0493,
+    "Rooftop garden (support)": 0.051,
+    "Sports hall": 0.0805
+  },
+  "translations": {
+    "Pusat warga emas sangat diperlukan di kawasan ini.": "A senior citizens' centre is badly needed in this area.",
+    "Tolong pastikan lif boleh digunakan semasa kerja pengubahsuaian.": "Please make sure the lift can be used during renovation works.",
+    "முதியோர் மையம் மிகவும் தேவை.": "A senior centre is very much needed.",
+    "希望早日有乐龄中心，楼下就方便了。": "Hope for an active ageing centre soon; it would be convenient downstairs.",
+    "施工噪音太大，希望周末不要动工。": "Construction noise is too loud; please no works at weekends.",
+    "电梯不能停，老人家上不了楼。": "The lifts cannot stop; elderly people cannot go upstairs."
+  }
+}

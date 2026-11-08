@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-06T16:33:51+08:00",
+  "generated": "2026-11-08T19:21:16+08:00",
   "llm": false,
   "passed": 33,
   "total": 33,
@@ -95,24 +95,24 @@
     "cost_time": {
       "runs": [
         {
-          "seconds": 0.387,
+          "seconds": 0.056,
           "tokens_in": 0,
           "tokens_out": 0,
           "cost_usd": 0.0,
           "llm": false
         },
         {
-          "seconds": 0.256,
+          "seconds": 0.054,
           "tokens_in": 0,
           "tokens_out": 0,
           "cost_usd": 0.0,
           "llm": false
         }
       ],
-      "mean_seconds": 0.322,
+      "mean_seconds": 0.055,
       "mean_tokens": 0,
       "mean_cost_usd": 0.0,
-      "eval_wall_seconds": 4.77
+      "eval_wall_seconds": 0.82
     }
   },
   "cases": [

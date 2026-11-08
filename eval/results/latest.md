@@ -1,4 +1,4 @@
-# Evaluation results (2026-11-06T16:33:51+08:00, LLM off)
+# Evaluation results (2026-11-08T19:21:16+08:00, LLM off)
 
 **33/33 test cases passed**
 
@@ -8,7 +8,7 @@
 2. Invention rate: 0.0% (0/75 sampled claims untraceable)
 3. Re-run stability: fresh-DB identical = {'plan': True, 'risk': True, 'gaps': True, 'reports': True}; PM second sync = {'created': 0, 'updated': 0, 'unchanged': 92}; duplicates = {}
 4. Critic catch rate: 100% (21/21)
-5. Cost and time per full run: 0.322 s, 0 tokens, US$0.0
+5. Cost and time per full run: 0.055 s, 0 tokens, US$0.0
 
 ## Test cases
 

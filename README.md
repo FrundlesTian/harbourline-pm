@@ -116,6 +116,12 @@ python3 server.py          # 或 ./run.sh
 7. **Change**：注入 CE-01 或 CE-02（学号末位奇数选 CE-01，偶数选 CE-02），查看 stale 项、自动重生成的草稿和 Impact Note，然后逐条做 HC6 审批。
 8. **Governance**：展示偏差检查并做 HC7 签字，再导出审计记录。
 
+## 文档
+
+* 设计文档：`docs/design/design_document.md`（架构图 `architecture.mmd`、结论溯源 `claims_trace.md`、待补充项 `open_items.md`）
+* 评测报告：`docs/evaluation/evaluation_report.md`（结果在 `eval/results/`，LLM 模式日志在 `docs/design/evidence/`）
+* 治理日志：`docs/governance/governance_log.md`（审计与审批导出在 `docs/governance/evidence/`，用 `python3 scripts/governance_demo.py` 重新生成）
+
 ## 说明与限制
 
 * CE-01 和 CE-02 的文本是根据 Week 12 Guide 的内容整理的英文版本。如果和课件原文措辞不同，请直接修改 `change_events/CE-0x.json`，或在 UI 里注入自定义事件。
