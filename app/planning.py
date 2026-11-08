@@ -2,7 +2,7 @@
 Scope statement, gap/Sponsor-Question register (with assumptions), conflict register,
 WBS to Level 3 with dictionary and traceability, and a milestone plan with dependencies.
 
-When DeepSeek is configured (default), scope, Sponsor Questions, WBS and milestones are
+When an LLM is configured (default), scope, Sponsor Questions, WBS and milestones are
 GENERATED from the brief, sponsor answers and data pack (`_llm_plan`), then validated:
 unknown source ids are dropped, WBS hierarchy and traceability are enforced, milestone
 dependencies must point backwards, and a date is kept only if a cited source states it.
@@ -484,7 +484,7 @@ def _llm_plan():
 
 
 def run(use_llm=True):
-    """Full planning pass. LLM-generated (validated) when DeepSeek is configured, curated
+    """Full planning pass. LLM-generated (validated) when an LLM is configured, curated
     baseline otherwise; both are deterministic for the same inputs (temperature 0 + cache).
     Human-approved change annotations (HC6) on milestones and gaps are carried over."""
     keep_ms = {m["id"]: _change_annotations(m["note"]) for m in db.q("SELECT id, note FROM milestones")}

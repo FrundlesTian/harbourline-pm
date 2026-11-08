@@ -93,7 +93,7 @@ function approvalLine(a) { return a ? `${statusChip(a.decision)} by <b>${esc(a.a
 /* ------------------------------------------------------------ Overview */
 async function vOverview() {
   const s = await api("/api/status");
-  $("#mode").textContent = `${s.generation === "llm" ? "LLM: DeepSeek" : "LLM off · deterministic"} · PM: ${s.pm_backend}`;
+  $("#mode").textContent = `${s.generation === "llm" ? "LLM: " + s.llm_chain : "LLM off · deterministic"} · PM: ${s.pm_backend}`;
   const c = s.counts;
   const og = s.origins || {};
   const originRow = [["planning", "Planning"], ["risk", "Risk register"], ["reporting", "Reports"], ["change", "Change analysis"]].map(([k, label]) => {
@@ -540,7 +540,7 @@ function enterApp(user) {
   $("#u-avatar").textContent = user.name.slice(0, 1).toUpperCase();
   $("#u-avatar").className = `avatar r-${user.role}`;
   document.querySelectorAll("#nav a[data-tab]").forEach((a) => (a.hidden = !user.views.includes(a.dataset.tab)));
-  api("/api/status").then((s) => { $("#mode").textContent = `${s.generation === "llm" ? "LLM: DeepSeek" : "LLM off · deterministic"} · PM: ${s.pm_backend}`; }).catch(() => {});
+  api("/api/status").then((s) => { $("#mode").textContent = `${s.generation === "llm" ? "LLM: " + s.llm_chain : "LLM off · deterministic"} · PM: ${s.pm_backend}`; }).catch(() => {});
   const t = location.hash.slice(1);
   selectTab(VIEWS[t] && user.views.includes(t) ? t : "dashboard");
 }

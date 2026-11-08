@@ -439,11 +439,11 @@ def main():
         print("WARNING facts rejected (quote not in source):", info["facts_rejected"])
     if not db.q("SELECT code FROM wbs LIMIT 1"):
         if llm.generation_enabled():
-            print("First run: generating plan, risk register and reports with DeepSeek "
+            print("First run: generating plan, risk register and reports with the LLM "
                   "(a few minutes the first time; responses are cached, so later runs are fast)...")
         pipeline.full_run()
     print(f"Harbourline PM system on http://{config.HOST}:{config.PORT}  "
-          f"(LLM: {'DeepSeek ' + config.DEEPSEEK_MODEL if config.DEEPSEEK_API_KEY else 'off - deterministic mode'}, "
+          f"(LLM: {llm.chain() if llm.available() else 'off - deterministic mode'}, "
           f"PM backend: {config.PM_BACKEND})")
     ThreadingHTTPServer((config.HOST, config.PORT), H).serve_forever()
 

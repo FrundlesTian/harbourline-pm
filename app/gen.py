@@ -2,12 +2,12 @@
 
 Pattern used by every generating agent:
   1. build the SOURCES block from indexed chunks (the only world the model may use);
-  2. ask DeepSeek (temperature 0, cached) for structured JSON;
+  2. ask the LLM (Gemini, DeepSeek as backup; temperature 0, cached) for structured JSON;
   3. validate deterministically - unknown source ids, WBS codes, tags or untraceable
      dates/numbers are dropped or the whole draft is rejected;
   4. fall back to the curated baseline only when the LLM is off or validation fails,
      and record which path produced the output (`origin:<agent>` in kv + audit log)."""
-from . import audit, config, db, sources
+from . import audit, db, llm, sources
 
 # Controlled tag vocabulary. Tags are the provenance links the Change Agent uses to find
 # what an event makes stale, so generated items may only use these.
@@ -59,7 +59,7 @@ def tags(ts):
 
 
 def set_origin(agent, mode, reason="", **extra):
-    info = dict(mode=mode, model=config.DEEPSEEK_MODEL if mode == "llm" else None, reason=reason, at=db.now(), **extra)
+    info = dict(mode=mode, model=llm.chain() if mode == "llm" else None, reason=reason, at=db.now(), **extra)
     db.kv_set("origin:" + agent, info)
     audit.log(agent, f"output generated ({mode})", "generation", agent,
               outcome="ok" if mode == "llm" or not reason else "fallback", detail=info)

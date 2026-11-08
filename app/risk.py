@@ -3,7 +3,7 @@ Scored register (L x I) with owners, triggers, linked WBS and sources; seed-regi
 three what-ifs with cost and schedule impact and stated assumptions; automatic
 re-scoring proposals when a change event alters the plan.
 
-With DeepSeek configured (default) the register is GENERATED from the seed register,
+With an LLM configured (default) the register is GENERATED from the seed register,
 pack evidence and the WBS hand-off (`_llm_register`) and validated (scores 1-5, WBS
 links must exist, sources must exist, owner + trigger required). REGISTER below is the
 curated baseline used when the LLM is off or the generated register fails validation.

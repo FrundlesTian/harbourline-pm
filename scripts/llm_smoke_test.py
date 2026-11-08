@@ -1,4 +1,5 @@
-"""DeepSeek smoke test. Reads DEEPSEEK_API_KEY from .env / environment; never prints it.
+"""LLM smoke test (Gemini primary, DeepSeek backup). Reads the API keys from .env /
+environment; never prints them.
     python3 scripts/llm_smoke_test.py
 Checks: (1) raw API call, (2) grounded Memory answer with a validated citation,
 (3) NOT FOUND on a question the pack cannot answer, (4) a full pipeline run with
@@ -15,10 +16,11 @@ os.environ["HCH_DB"] = str(Path(tempfile.mkdtemp(prefix="hch-llm-")) / "llm.db")
 
 from app import audit, config, db, llm, memory, pipeline  # noqa: E402
 
-key = config.DEEPSEEK_API_KEY
-if not key:
-    sys.exit("DEEPSEEK_API_KEY not found in .env or environment")
-print(f"key loaded: yes (length {len(key)}, value not shown) · model {config.DEEPSEEK_MODEL} · {config.DEEPSEEK_BASE_URL}")
+provs = config.llm_providers()
+if not provs:
+    sys.exit("No LLM key found (GEMINI_API_KEY or DEEPSEEK_API_KEY) in .env or environment")
+for p in provs:
+    print(f"{p['name']}: key loaded (value not shown) · model {p['model']} · {p['base_url']}")
 
 ok = True
 t = time.time()
@@ -26,7 +28,7 @@ text, usage = llm.chat("smoke", "Reply with exactly: OK", "ping", max_tokens=5)
 if text is None:
     print("1 raw call: FAIL -", audit.redact(usage.get("error")))
     sys.exit(1)
-print(f"1 raw call: PASS ({time.time() - t:.1f}s) reply={text.strip()!r} tokens={usage['tokens_in']}+{usage['tokens_out']}")
+print(f"1 raw call: PASS ({time.time() - t:.1f}s) reply={text.strip()!r} via {usage.get('model')} tokens={usage['tokens_in']}+{usage['tokens_out']}")
 
 pipeline.init()
 with audit.Run("llm-smoke") as run:

@@ -411,7 +411,7 @@
     [/^all\s+(\d+) claims traced; required sections present$/, n => `全部 ${n} 项断言可追溯；必需章节齐全`],
     [/^(\d+) claims traced; required sections present$/, n => `${n} 项断言可追溯；必需章节齐全`],
     [/^LLM off · deterministic · PM: (.+)$/, pm => `LLM 关闭 · 确定性模式 · PM：${pm}`],
-    [/^LLM: DeepSeek · PM: (.+)$/, pm => `LLM：DeepSeek · PM：${pm}`],
+    [/^LLM: (.+) · PM: (.+)$/, (m, pm) => `LLM：${m} · PM：${pm}`],
     [/^Admin demo walkthrough · (\d+)\/(\d+) complete$/, (a, b) => `管理员演示引导 · 已完成 ${a}/${b}`],
     [/^Users \((\d+)\)$/, n => `用户（${n}）`],
     [/^(\d+) AI items on Jira$/, n => `Jira 上有 ${n} 个 AI 事项`],

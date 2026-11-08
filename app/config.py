@@ -24,15 +24,42 @@ def _load_dotenv():
 
 _load_dotenv()
 
-# --- LLM (DeepSeek, OpenAI-compatible) ---------------------------------------
+# --- LLM providers (OpenAI-compatible chat completions) ------------------------
+# Primary: Gemini via Google AI Studio's OpenAI-compatible endpoint (free tier).
+# Backup: DeepSeek. A call that fails on one provider is retried on the next one
+# (order: HCH_LLM_ORDER). A provider is used only when its API key is set.
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_BASE_URL = os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+# "none" turns off thinking on Flash models so the whole max_tokens budget is answer text;
+# set GEMINI_REASONING_EFFORT= (empty) for models that do not accept the parameter.
+GEMINI_REASONING_EFFORT = os.environ.get("GEMINI_REASONING_EFFORT", "none").strip()
+GEMINI_PRICE_IN_PER_M = float(os.environ.get("GEMINI_PRICE_IN_PER_M", "0"))     # free tier
+GEMINI_PRICE_OUT_PER_M = float(os.environ.get("GEMINI_PRICE_OUT_PER_M", "0"))
+
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 DEEPSEEK_BASE_URL = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
 DEEPSEEK_MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
 # USD per 1M tokens. Check DeepSeek's current price page and override in .env.
 PRICE_IN_PER_M = float(os.environ.get("DEEPSEEK_PRICE_IN_PER_M", "0.28"))
 PRICE_OUT_PER_M = float(os.environ.get("DEEPSEEK_PRICE_OUT_PER_M", "0.42"))
+LLM_ORDER = [x.strip().lower() for x in os.environ.get("HCH_LLM_ORDER", "gemini,deepseek").split(",") if x.strip()]
+
+
+def llm_providers():
+    """Configured providers in fallback order. Keys stay in memory only."""
+    all_ = {
+        "gemini": dict(name="gemini", key=GEMINI_API_KEY, base_url=GEMINI_BASE_URL, model=GEMINI_MODEL,
+                       price_in=GEMINI_PRICE_IN_PER_M, price_out=GEMINI_PRICE_OUT_PER_M,
+                       extra={"reasoning_effort": GEMINI_REASONING_EFFORT} if GEMINI_REASONING_EFFORT else {}),
+        "deepseek": dict(name="deepseek", key=DEEPSEEK_API_KEY, base_url=DEEPSEEK_BASE_URL, model=DEEPSEEK_MODEL,
+                         price_in=PRICE_IN_PER_M, price_out=PRICE_OUT_PER_M, extra={}),
+    }
+    return [all_[n] for n in LLM_ORDER if n in all_ and all_[n]["key"]]
+
+
 LLM_DISABLED = os.environ.get("HCH_DISABLE_LLM", "") == "1"
-# "llm" (default): when DeepSeek is configured, agents generate their core outputs from the
+# "llm" (default): when an LLM provider is configured, agents generate their core outputs from the
 # sources and deterministic validators check them; the curated baseline is the fallback.
 # "baseline": always use the curated, hand-checked baseline (reproducible regression mode).
 GENERATION_MODE = os.environ.get("HCH_GENERATION", "llm").strip().lower()

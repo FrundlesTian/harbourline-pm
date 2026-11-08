@@ -12,14 +12,14 @@ python3 server.py          # 或 ./run.sh
 
 * 首次启动会自动完成以下步骤：导入 data pack，校验事实库（共 78 条事实，每条的 quote 都必须能在原文中找到），然后跑一次完整流程。
 * 打开页面后需要**登录**。审批人就是当前登录账号，所有人工检查点（HC1–HC7）都会记录审批人姓名、账号和账号角色，不能再手填别人的名字。
-* **LLM 生成（默认）**：在 `.env` 中填写 `DEEPSEEK_API_KEY` 后，核心产出由 DeepSeek **从原始资料生成**，详见下文“LLM 生成与基线回退”。不填 key（或设 `HCH_GENERATION=baseline`）时，使用人工整理的基线内容，以确定性模式完整运行（成本为零）。
+* **LLM 生成（默认）**：在 `.env` 中填写 `GEMINI_API_KEY`（主用，Google AI Studio 免费层）和/或 `DEEPSEEK_API_KEY`（备用）后，核心产出由 LLM **从原始资料生成**；Gemini 调用失败时自动改用 DeepSeek 重试，详见下文“LLM 生成与基线回退”。不填 key（或设 `HCH_GENERATION=baseline`）时，使用人工整理的基线内容，以确定性模式完整运行（成本为零）。
 * **Jira（可选）**：配置 `JIRA_BASE_URL / JIRA_EMAIL / JIRA_API_TOKEN / JIRA_PROJECT_KEY` 后写入真实的 Jira Cloud；三项必填缺任何一项都使用本地 SQLite 模拟看板，两者使用同一份数据契约。详见下文“Jira 联动”。
 * 运行评估：`python3 eval/run_eval.py --no-llm`，结果写入 `eval/results/latest.md` 和 `latest.json`。也可以在 UI 的 Evaluation 页点击运行。
 * **界面语言**：页面右上角的“中文 / EN”按钮可即时切换界面，选择会保存在浏览器中。导航、操作控件、提示、状态及内置确定性报告提供中文译文；启用 DeepSeek 时，动态生成的项目文字也会按需翻译。来源引文和用户输入保留原文，便于核对证据。
 
 ## LLM 生成与基线回退
 
-配置 DeepSeek 后（默认），各 Agent 的核心产出都由 LLM 根据 brief、Sponsor Answers 和 data pack 生成，再由确定性校验把关：
+配置 LLM 后（默认；Gemini 为主，DeepSeek 为备用），各 Agent 的核心产出都由 LLM 根据 brief、Sponsor Answers 和 data pack 生成，再由确定性校验把关：
 
 | 产出 | LLM 生成什么 | 确定性校验 | 回退 |
 |---|---|---|---|
