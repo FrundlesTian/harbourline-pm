@@ -48,7 +48,7 @@ flowchart LR
 
 *Thick arrows (`==>`) are automatic hand-offs, each written to the `handoffs` table by `audit.handoff()` (`app/audit.py:52-57`). Hexagons are human checkpoints. The full diagram is `docs/design/architecture.mmd`.*
 
-**Stack (as built).** Python 3 standard library only: `ThreadingHTTPServer` (`server.py:435-452`), vanilla HTML/JS front end (`static/`), SQLite for every store including the audit log (`app/db.py:13-87`). The LLM client calls OpenAI-compatible chat endpoints and tries providers in order: **Gemini via Google AI Studio first, DeepSeek as backup** (`app/config.py:27-59`, `app/llm.py:66-115`). A failed call is logged and retried on the next provider (`app/llm.py:72-80`). The PM tool is Jira Cloud REST v3, with a local mock board that implements the same contract (`app/pmtool.py:71-341`). Role-based login is enforced server-side (`app/auth.py:26-58`, `server.py:314-340`). There is no Streamlit UI and no JSONL log; the UI runs locally at `http://127.0.0.1:8000` (`app/config.py:84-85`).
+**Stack (as built).** Python 3 standard library only: `ThreadingHTTPServer` (`server.py`), vanilla HTML/JS front end (`static/`), SQLite for every store including the audit log (`app/db.py`). The LLM client calls OpenAI-compatible chat endpoints and tries providers in order: **Gemini via Google AI Studio first, DeepSeek as backup** (`app/config.py`, `app/llm.py`). A failed call is logged and retried on the next provider. The PM tool is Jira Cloud REST v3, with a local mock board that implements the same contract (`app/pmtool.py`). Users choose an active identity without a password; role permissions are enforced server-side (`app/auth.py`, `server.py`). There is no Streamlit UI and no JSONL log; the UI runs locally at `http://127.0.0.1:8000` (`app/config.py`).
 
 **One full run** (`app/pipeline.py:21-33`, `POST /api/run`):
 
@@ -148,7 +148,7 @@ Role and Context are fixed in `app/agents.py:9-91` (full text: Appendix B). **Mo
 
 ## 4. Human checkpoint map
 
-Checkpoints are defined in `app/audit.py:16-31`. The server signs every approval with the logged-in account, never a typed name (`server.py:80-105`), and checks the account's role first (`app/auth.py:193-211`). Approvals go to the `approvals` table with approver, role, account, decision, comment and timestamp (`app/db.py:58-60`, migrations `:95-98`) and are mirrored in `audit_log`.
+Checkpoints are defined in `app/audit.py`. The server records every approval under the selected session account, never a typed name (`server.py`), and checks that account's role first (`app/auth.py`). Approvals go to the `approvals` table with approver, role, account, decision, comment and timestamp (`app/db.py`) and are mirrored in `audit_log`. Passwordless identity selection means this account label does not verify who clicked the approval.
 
 | ID | What is approved (bound to) | Shown to the approver | Approver role (RBAC) / name | On reject | If skipped, what is stale or unprotected |
 |---|---|---|---|---|---|
@@ -191,6 +191,8 @@ The role strings in `app/audit.py` ("Team PM lead" …) are older labels; the RB
 - **Allowed:** create, update (summary, description, labels, due date, parent), comment, link, and reads.
 - **Refused and logged:** delete, close, transition, and any update touching status or resolution (`:363-390`).
 - **One exception:** the agent deletes an *issue link* it has just created in the wrong direction, and logs it (`:308-312`). It never deletes an issue.
+
+The passwordless identity screen also has a separate **Reset demo** maintenance operation. It previews all issues in the configured Jira project, requires the project key as confirmation, deletes them child-first, then restores the local baseline. This is outside the agent's guarded PM tool interface; the audit trail records each deletion.
 
 **Jira endpoints:** ten REST v3 endpoints for search, bulk fetch, issue-type metadata, issue create/update, comment, issue links, `myself`, project and link types (`:209-341`; list in Appendix E). Rate limits (429/503) are retried using Retry-After (`:162-163`).
 
@@ -247,6 +249,8 @@ The vendor-change risk is logged: R23 in the baseline, and enforced by the valid
 - **L4: Checkpoints that only record.** HC1, HC4 and HC7 are recorded and shown but gate no code path (§4).
 - **L5: Evidence not in the repository.** There is no committed Jira run, no Gemini run, and no team-run Week 12 evidence.
 - **L6: Partial stretch items.** The three what-ifs are shown as cards, not a comparison table. Re-scoring is triggered by change events, not by arbitrary plan edits.
+- **L7: Passwordless demo identities.** Anyone who can reach the app can select an active account, including admin. Role permissions still apply to the selected session, but approvals are not proof of a person's identity. Use a protected local demo environment; restore authentication before using this workflow for real approvals or Jira writes.
+- **L8: Project-wide reset.** Anyone who can reach the identity screen can preview and confirm deletion of every issue visible to the configured Jira account in the selected project. The operation is irreversible and may partially complete if Jira refuses a later deletion. The local baseline is restored only after all requested Jira deletions succeed.
 
 ---
 

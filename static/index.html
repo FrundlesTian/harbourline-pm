@@ -40,19 +40,22 @@
   <main id="main"></main>
 </div>
 <div id="login" hidden>
-  <form class="login-card" id="login-form" autocomplete="on">
-    <div class="brand"><span class="logo">H</span><div><b>Harbourline AI PM</b><small>Sign in to continue</small></div></div>
-    <label>Username<input id="l-user" autocomplete="username" required></label>
-    <label>Password<input id="l-pw" type="password" autocomplete="current-password" required></label>
+  <div class="login-card">
+    <div class="brand"><span class="logo">H</span><div><b>Harbourline AI PM</b><small>Choose an identity to continue</small></div></div>
     <div id="l-err" class="lerr" hidden></div>
-    <button type="submit">Sign in</button>
-    <div class="demo-accounts"><div class="muted small">Demo accounts (click to fill)</div>
-      <button type="button" class="acct" data-u="admin" data-p="admin123"><span class="rolechip r-admin">System Admin</span><small>admin · sees everything, manages users</small></button>
-      <button type="button" class="acct" data-u="pm" data-p="pm1234"><span class="rolechip r-project_manager">Project Manager</span><small>pm · planning, PM tool, change · HC1 HC2 HC3 HC6</small></button>
-      <button type="button" class="acct" data-u="leader" data-p="leader123"><span class="rolechip r-group_leader">Group Leader</span><small>leader · risk &amp; reporting · HC4 HC5</small></button>
-      <button type="button" class="acct" data-u="supervisor" data-p="super123"><span class="rolechip r-supervisor">Supervisor</span><small>supervisor · governance, audit, eval · HC7</small></button>
+    <div class="demo-accounts"><div class="muted small">Select an active account</div><div id="identities">Loading…</div></div>
+    <div class="login-reset">
+      <button type="button" class="danger" id="reset-demo">Reset demo</button>
+      <div id="reset-status" role="status" aria-live="polite"></div>
+      <div id="reset-details" hidden>
+        <p class="muted small">Restore bundled baseline data and default identities. Approvals and decisions are cleared; audit history is retained.</p>
+        <div id="reset-scope"></div>
+        <p class="muted small" id="reset-jira-note">All issues in this Jira project will be deleted, including issues not created by this system.</p>
+        <details id="reset-keys-box" hidden><summary>Jira issue keys to delete</summary><div id="reset-keys" class="mono"></div></details>
+        <div class="row"><input id="reset-confirm-text" placeholder="Type RESET to confirm" autocomplete="off"><button type="button" class="danger" id="reset-confirm" disabled>Confirm reset</button><button type="button" class="ghost" id="reset-cancel">Cancel</button></div>
+      </div>
     </div>
-  </form>
+  </div>
 </div>
 <div id="modal" hidden><div class="modal-card"><button class="x" id="modal-x" aria-label="Close">×</button><div id="modal-body"></div></div></div>
 <div id="toast" hidden></div>

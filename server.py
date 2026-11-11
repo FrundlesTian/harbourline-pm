@@ -1,10 +1,12 @@
 """Harbourline AI PM system - HTTP server (Python standard library only).
 Run:  python3 server.py   then open http://127.0.0.1:8000"""
 import json
+import hashlib
 import mimetypes
 import os
 import subprocess
 import sys
+import threading
 import traceback
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -14,6 +16,7 @@ from app import (agents, audit, auth, change, config, dashboard, db, governance,
                  pmtool, reporting, risk, sources, translation)
 
 ROOT = config.ROOT
+RESET_LOCK = threading.Lock()
 
 
 def ok(data=None, **kw):
@@ -41,6 +44,41 @@ def api_run(q, b):
 def api_reset(q, b):
     pipeline.reset_demo()
     return ok({"reset": True})
+
+
+def reset_snapshot():
+    keys = sorted(issue["key"] for issue in pmtool.reset_candidates())
+    jira_enabled = pmtool.reset_jira_available()
+    snapshot = {"backend": config.PM_BACKEND, "jira_enabled": jira_enabled,
+                "site": config.JIRA_BASE_URL if jira_enabled else None,
+                "project": config.JIRA_PROJECT_KEY, "jira_count": len(keys),
+                "mock_count": db.q1("SELECT COUNT(*) c FROM pm_issues")["c"],
+                "confirm_text": config.JIRA_PROJECT_KEY if jira_enabled else "RESET"}
+    snapshot["preview_id"] = hashlib.sha256(db.J([snapshot, keys]).encode()).hexdigest()[:16]
+    return snapshot, keys
+
+
+def api_reset_preview(q, b):
+    with RESET_LOCK:
+        snapshot, keys = reset_snapshot()
+    return ok(snapshot, jira_keys=keys)
+
+
+def api_restore_initial(q, b):
+    confirm_text = config.JIRA_PROJECT_KEY if pmtool.reset_jira_available() else "RESET"
+    if b.get("confirm") != confirm_text or not b.get("preview_id"):
+        return 400, {"error": f"Preview the reset and type {confirm_text} to confirm"}
+    if not RESET_LOCK.acquire(blocking=False):
+        return 409, {"error": "A reset is already running"}
+    try:
+        snapshot, keys = reset_snapshot()
+        if snapshot["preview_id"] != b["preview_id"]:
+            return 409, {"error": "Project data changed since the preview; preview the reset again"}
+        deleted = pmtool.clear_jira_for_reset(keys)
+        run = pipeline.restore_initial_demo()
+        return ok({"reset": True, "jira_deleted": deleted, "baseline_run": run["run_id"]})
+    finally:
+        RESET_LOCK.release()
 
 
 def api_planning(q, b):
@@ -285,10 +323,10 @@ def api_admin_users(q, b):
 
 def api_admin_user_save(q, b):
     if b.get("create"):
-        auth.create_user(b.get("username"), b.get("display_name"), b.get("role"), b.get("password"), by=me()["username"])
+        auth.create_user(b.get("username"), b.get("display_name"), b.get("role"), by=me()["username"])
         return ok({"created": True})
     return ok({"changes": auth.update_user(b.get("username"), me()["username"], role=b.get("role"), active=b.get("active"),
-                                           password=b.get("password") or None, display_name=b.get("display_name"))})
+                                           display_name=b.get("display_name"))})
 
 
 ROUTES = {
@@ -367,9 +405,18 @@ class H(BaseHTTPRequestHandler):
         token = SimpleCookie(self.headers.get("Cookie") or "").get(auth.COOKIE)
         token = token.value if token else None
         try:
+            if u.path == "/api/identities" and method == "GET":
+                return self._send(200, {"identities": auth.selectable_users()})
+            if u.path == "/api/reset/preview" and method == "GET":
+                code, data = api_reset_preview(q, {})
+                return self._send(code, data)
+            if u.path == "/api/reset/restore" and method == "POST":
+                code, data = api_restore_initial(q, body_of(self))
+                return self._send(code, data)
             if u.path == "/api/login" and method == "POST":
                 b = body_of(self)
-                tok, user = auth.login(b.get("username"), b.get("password"), self.client_address[0])
+                tok, user = auth.login(b.get("username"), self.client_address[0])
+                auth.logout(token)
                 cookie = f"{auth.COOKIE}={tok}; HttpOnly; SameSite=Strict; Path=/; Max-Age={auth.SESSION_HOURS * 3600}"
                 return self._send(200, {"user": user}, headers=[("Set-Cookie", cookie)])
             if u.path == "/api/logout" and method == "POST":

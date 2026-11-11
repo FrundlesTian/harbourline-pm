@@ -78,3 +78,23 @@ def reset_demo():
     db.ex("DELETE FROM sources WHERE kind='change'")
     sources.INDEX.invalidate()
     audit.log("orchestrator", "demo reset (outputs cleared; audit + approvals kept)", "system", "reset", actor_type="system")
+
+
+def restore_initial_demo():
+    """Restore the first-launch baseline after external PM cleanup has succeeded.
+
+    The audit trail stays append-only; approvals, decisions, accounts, sessions and
+    generated data are recreated from the bundled sources.
+    """
+    tables = ("sources", "facts", "conflicts", "scope_lines", "gaps", "wbs", "wbs_flagged",
+              "milestones", "risks", "whatifs", "reports", "change_events", "stale_items",
+              "actions", "approvals", "pm_issues", "pm_sync_map", "decisions", "qa_log",
+              "runs", "handoffs", "bias_checks", "kv", "sessions", "users")
+    for table in tables:
+        db.ex(f"DELETE FROM {table}")
+    sources.INDEX.invalidate()
+    audit.log("orchestrator", "initial demo restored", "system", "reset", actor_type="system")
+    init()
+    from . import auth
+    auth.ensure_seed()
+    return full_run(use_llm=False)

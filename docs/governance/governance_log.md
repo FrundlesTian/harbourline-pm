@@ -43,7 +43,7 @@ To reproduce the demonstration: `python3 scripts/governance_demo.py`. The export
 
 ### 2.1 Demonstration run (`approvals.csv`)
 
-The approver is the logged-in account. The server takes it from the session and never from a typed name (`server.py:80-92`).
+The approver is the selected session account. The server takes it from the session and never from a typed name (`server.py`). Current passwordless identity selection does not verify the person using that account; these demonstration approvals are not evidence of a real person's sign-off.
 
 | # | Checkpoint | Item approved | Approver (account) | Decision | Comment |
 |---|---|---|---|---|---|

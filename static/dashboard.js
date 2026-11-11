@@ -356,10 +356,10 @@ async function vAdmin() {
      <td class="mono">${esc(x.username)}${x.username === ME.username ? " " + chip("you", "info") : ""}</td><td><input class="u-name" value="${esc(x.display_name)}" style="width:130px"></td>
      <td><select class="u-role">${roleOpts(x.role)}</select></td><td>${x.active ? chip("active", "ok") : chip("disabled", "stop")}</td>
      <td class="mono">${esc(x.last_login || "—")}</td><td>${x.active_sessions}</td><td>${x.approvals}</td><td>${x.human_actions}</td><td>${x.denied ? chip(x.denied, "stop") : 0}</td>
-     <td class="uact"><button class="ghost u-save">Save</button> <button class="ghost u-pw">Reset password</button> <button class="${x.active ? "danger" : "ghost"} u-act" data-active="${x.active}">${x.active ? "Disable" : "Enable"}</button></td></tr>`))}
+     <td class="uact"><button class="ghost u-save">Save</button> <button class="${x.active ? "danger" : "ghost"} u-act" data-active="${x.active}">${x.active ? "Disable" : "Enable"}</button></td></tr>`))}
   <div class="card"><h3>Create user</h3><div class="row">
     <input id="nu-user" placeholder="username" autocomplete="off"><input id="nu-name" placeholder="Display name"><select id="nu-role">${roleOpts("project_manager")}</select>
-    <input id="nu-pw" type="password" placeholder="Password (min 6)" autocomplete="new-password"><button id="nu-go">Create</button></div></div>
+    <button id="nu-go">Create</button></div></div>
   <h2>Access log (logins, denied requests, user changes)</h2>
   ${table(["#", "Time", "Account", "Event", "Target", "Outcome"], u.access_log.map((a) => `<tr><td>${a.id}</td><td class="mono">${esc(a.ts)}</td><td>${esc(a.actor)}</td><td>${esc(a.action)}</td><td class="mono">${esc(a.target_id)}</td><td>${statusChip(a.outcome)}</td></tr>`))}`;
   bindGo();
@@ -370,10 +370,9 @@ async function vAdmin() {
   main.querySelectorAll("tr[data-user]").forEach((tr) => {
     $(".u-save", tr).onclick = () => save(tr, {});
     $(".u-act", tr).onclick = () => save(tr, { active: !Number($(".u-act", tr).dataset.active) });
-    $(".u-pw", tr).onclick = () => { const pw = prompt("New password (min 6 characters)"); if (pw) save(tr, { password: pw }); };
   });
   $("#nu-go").onclick = async () => {
-    await api("/api/admin/users", { create: true, username: $("#nu-user").value, display_name: $("#nu-name").value, role: $("#nu-role").value, password: $("#nu-pw").value });
+    await api("/api/admin/users", { create: true, username: $("#nu-user").value, display_name: $("#nu-name").value, role: $("#nu-role").value });
     toast("User created"); vAdmin();
   };
 }

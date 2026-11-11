@@ -215,7 +215,7 @@ class JiraCloud:
             data = self._req("GET", "/rest/api/3/search/jql?" + urllib.parse.urlencode(q))
             res += [self._norm(i) for i in data.get("issues", [])]
             token = data.get("nextPageToken")
-            if not token or data.get("isLast", True):
+            if not token or data.get("isLast") is True:
                 return res
 
     def get_many(self, keys):
@@ -392,6 +392,60 @@ class Guarded:
 
 def backend():
     return Guarded(JiraCloud() if config.PM_BACKEND == "jira" else MockBoard())
+
+
+def reset_jira_available():
+    return config.PM_BACKEND == "jira" or not config.JIRA_MISSING
+
+
+def reset_candidates():
+    """Find live project issues, including syncs missing from Jira's search index."""
+    if not reset_jira_available():
+        return []
+    cloud = JiraCloud()
+    searched = cloud._search(f'project = "{config.JIRA_PROJECT_KEY}" ORDER BY key')
+    keys = {issue["key"] for issue in searched}
+    known = db.q("SELECT remote_key FROM pm_sync_map WHERE backend='jira'")
+    keys.update(r["remote_key"] for r in known if r["remote_key"])
+    return cloud.get_many(sorted(keys))
+
+
+def clear_jira_for_reset(expected_keys):
+    """Delete the confirmed Jira project contents outside the agent's Guarded adapter."""
+    if not reset_jira_available():
+        if expected_keys:
+            raise ValueError("Jira is not configured for reset")
+        return 0
+    cloud = JiraCloud()
+    current = reset_candidates()
+    keys = sorted(issue["key"] for issue in current)
+    if keys != sorted(expected_keys):
+        raise ValueError("Jira issues changed since the preview; preview the reset again")
+    fresh = cloud.get_many(keys)
+    if len(fresh) != len(keys) or {issue["key"] for issue in fresh} != set(keys):
+        raise RuntimeError("Jira issues changed since the preview; nothing was deleted")
+    by_key = {issue["key"]: issue for issue in fresh}
+
+    def depth(issue):
+        n, parent = 0, issue["parent_key"]
+        while parent in by_key and n < len(by_key):
+            n += 1
+            parent = by_key[parent]["parent_key"]
+        return n
+
+    deleted = 0
+    for issue in sorted(fresh, key=depth, reverse=True):
+        key = issue["key"]
+        # Subtasks are deleted first; false prevents an unreviewed cascade.
+        try:
+            cloud._req("DELETE", f"/rest/api/3/issue/{urllib.parse.quote(key)}?deleteSubtasks=false")
+        except RuntimeError as exc:
+            raise RuntimeError(f"Jira cleanup stopped after {deleted}/{len(fresh)} issues; "
+                               f"local data was not reset: {exc}") from exc
+        deleted += 1
+        audit.log("demo reset", "Jira project issue deleted", "pm_issue", key,
+                  detail={"project": config.JIRA_PROJECT_KEY}, actor_type="human")
+    return deleted
 
 
 # ------------------------------------------------------------------ sync

@@ -10,9 +10,8 @@ can no longer be approved under a typed-in name.
   supervisor       Independent oversight: governance, audit, evaluation. Owns HC7.
 """
 import hashlib
-import hmac
-import os
 import secrets
+import os
 from datetime import datetime, timedelta, timezone
 
 from . import audit, db
@@ -58,23 +57,19 @@ ROLES = {
 }
 
 DEFAULT_USERS = [
-    ("admin", "System Admin", "admin", os.environ.get("HCH_ADMIN_PASSWORD", "admin123")),
-    ("pm", "Project Manager", "project_manager", os.environ.get("HCH_PM_PASSWORD", "pm1234")),
-    ("leader", "Group Leader", "group_leader", os.environ.get("HCH_LEADER_PASSWORD", "leader123")),
-    ("supervisor", "Supervisor", "supervisor", os.environ.get("HCH_SUPERVISOR_PASSWORD", "super123")),
+    ("admin", "System Admin", "admin"),
+    ("pm", "Project Manager", "project_manager"),
+    ("leader", "Group Leader", "group_leader"),
+    ("supervisor", "Supervisor", "supervisor"),
 ]
 
 
 class AuthError(Exception):
-    """401 - not logged in / bad credentials."""
+    """401 - no active session or selectable identity."""
 
 
 class Forbidden(Exception):
     """403 - logged in, but the role does not allow this."""
-
-
-def _hash(password, salt):
-    return hashlib.pbkdf2_hmac("sha256", password.encode(), bytes.fromhex(salt), 120_000).hex()
 
 
 def _utc(dt=None):
@@ -84,11 +79,11 @@ def _utc(dt=None):
 def ensure_seed():
     if db.q1("SELECT COUNT(*) c FROM users")["c"]:
         return
-    for username, name, role, pw in DEFAULT_USERS:
-        create_user(username, name, role, pw, by="system")
+    for username, name, role in DEFAULT_USERS:
+        create_user(username, name, role, by="system")
 
 
-def create_user(username, display_name, role, password, by="admin"):
+def create_user(username, display_name, role, by="admin"):
     username = (username or "").strip().lower()
     if not username or not username.replace("_", "").replace("-", "").replace(".", "").isalnum():
         raise ValueError("username must be letters, digits, '.', '-' or '_'")
@@ -96,18 +91,15 @@ def create_user(username, display_name, role, password, by="admin"):
         raise ValueError(f"unknown role {role}")
     if not display_name or not display_name.strip():
         raise ValueError("display name required")
-    if not password or len(password) < 6:
-        raise ValueError("password must be at least 6 characters")
     if db.q1("SELECT 1 FROM users WHERE username=?", (username,)):
         raise ValueError("username already exists")
-    salt = secrets.token_hex(16)
-    db.ex("INSERT INTO users(username,display_name,role,pw_salt,pw_hash,active,created_at) VALUES(?,?,?,?,?,1,?)",
-          (username, display_name.strip(), role, salt, _hash(password, salt), db.now()))
+    db.ex("INSERT INTO users(username,display_name,role,active,created_at) VALUES(?,?,?,1,?)",
+          (username, display_name.strip(), role, db.now()))
     audit.log(by, "user created", "user", username, detail={"role": role},
               actor_type="system" if by == "system" else "human")
 
 
-def update_user(username, by, role=None, active=None, password=None, display_name=None):
+def update_user(username, by, role=None, active=None, display_name=None):
     u = db.q1("SELECT * FROM users WHERE username=?", (username,))
     if not u:
         raise ValueError("unknown user")
@@ -127,26 +119,25 @@ def update_user(username, by, role=None, active=None, password=None, display_nam
             raise ValueError("at least one active admin must remain")
     for k, v in changes.items():
         db.ex(f"UPDATE users SET {k}=? WHERE username=?", (v, username))
-    if password:
-        if len(password) < 6:
-            raise ValueError("password must be at least 6 characters")
-        salt = secrets.token_hex(16)
-        db.ex("UPDATE users SET pw_salt=?, pw_hash=? WHERE username=?", (salt, _hash(password, salt), username))
-        changes["password"] = "reset"
-    if changes.get("active") == 0 or "role" in changes or password:
+    if changes.get("active") == 0 or "role" in changes:
         db.ex("DELETE FROM sessions WHERE username=?", (username,))   # force re-login
     if changes:
         audit.log(by, "user updated", "user", username, detail=changes, actor_type="human")
     return changes
 
 
-def login(username, password, ip=""):
+def selectable_users():
+    return db.q("SELECT username,display_name,role FROM users WHERE active=1 ORDER BY "
+                "CASE role WHEN 'admin' THEN 0 WHEN 'project_manager' THEN 1 WHEN 'group_leader' THEN 2 ELSE 3 END, username")
+
+
+def login(username, ip=""):
     username = (username or "").strip().lower()
     u = db.q1("SELECT * FROM users WHERE username=?", (username,))
-    if not u or not u["active"] or not hmac.compare_digest(u["pw_hash"], _hash(password or "", u["pw_salt"])):
-        audit.log(username or "(blank)", "login failed", "session", "", outcome="rejected",
+    if not u or not u["active"]:
+        audit.log(username or "(blank)", "identity selection failed", "session", "", outcome="rejected",
                   detail={"ip": ip}, actor_type="human")
-        raise AuthError("Invalid username or password")
+        raise AuthError("Identity unavailable")
     token = secrets.token_urlsafe(32)
     now = datetime.now(timezone.utc)
     db.ex("INSERT INTO sessions(token,username,created_at,expires_at,last_seen,ip) VALUES(?,?,?,?,?,?)",

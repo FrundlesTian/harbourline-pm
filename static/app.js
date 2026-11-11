@@ -184,6 +184,18 @@ async function approve(cp, item_id, decision = "approved", comment = "") {
 }
 
 /* ------------------------------------------------------------ PM tool */
+let pmSyncStatus = null;
+function pmSyncStatusHtml() {
+  if (!pmSyncStatus) return "";
+  const { state, message } = pmSyncStatus;
+  return `<div class="pm-sync-status ${state}">
+    ${state === "pending" ? '<span class="pm-sync-spinner" aria-hidden="true"></span>' : ""}${esc(message)}</div>`;
+}
+function setPmSyncStatus(state, message) {
+  pmSyncStatus = { state, message };
+  const el = $("#pm-sync-status");
+  if (el) el.innerHTML = pmSyncStatusHtml();
+}
 async function vPM() {
   const b = await api("/api/pm/board");
   const jira = b.backend === "jira";
@@ -193,6 +205,7 @@ async function vPM() {
   <p class="lead">Backend: <b>${esc(b.backend)}</b> (project <b data-no-translate>${esc(b.project)}</b>). Writes need the plan approved (HC2) and the exact diff approved (HC3). Stable external keys (<span class="mono">ext-HCH-…</span> labels) make a second run update rather than duplicate. Agents may create, update and comment; Done, close and delete are human acts.</p>
   <div class="row"><button id="prev" data-perm="pm.write">1. Preview diff (read-only)</button><span id="previnfo" class="muted"></span></div>
   <div id="prevbox"></div>
+  <div id="pm-sync-status" role="status" aria-live="polite">${pmSyncStatusHtml()}</div>
   <h2>Board (${b.issues.length} items)</h2>
   <div class="row"><button class="ghost" id="rb">Read back &amp; verify</button><span id="rbinfo"></span></div>
   <div class="row"><span class="muted">Guardrail demo - the agent tries to:</span>
@@ -205,6 +218,8 @@ async function vPM() {
     <td>${b.backend === "mock" && i.status !== "Done" ? `<button class="ghost" data-human="${esc(i.key)}" data-perm="pm.write">Done</button>` : i.url ? `<a href="${esc(i.url)}" target="_blank" rel="noopener" class="muted">Open in Jira</a>` : ""}</td></tr>`))}`;
   bindJiraPanel();
   $("#prev").onclick = async () => {
+    pmSyncStatus = null;
+    $("#pm-sync-status").innerHTML = "";
     const p = await api("/api/pm/preview");
     if (!p.ok) { $("#previnfo").innerHTML = chip(p.reason, "stop"); return; }
     $("#previnfo").innerHTML = `preview <span class="mono">${p.preview_id}</span>: ${Object.entries(p.counts).map(([k, v]) => chip(`${k} ${v}`, k === "unchanged" ? "ok" : "warn")).join(" ")}`;
@@ -212,10 +227,29 @@ async function vPM() {
       `<details><summary>${p.items.length} items</summary>${table(["External key", "Summary", "Action", "Remote"], p.items.map((i) => `<tr><td class="mono">${esc(i.ext_key)}</td><td>${esc(i.summary)}</td><td>${statusChip(i.action)}</td><td>${esc(i.remote_key || "")}</td></tr>`))}</details>`;
     $("#hc3").onclick = async () => {
       const who = approver(); if (!who) return;
-      await api("/api/approve", { checkpoint: "HC3", item_id: p.preview_id, approver: who, decision: "approved" });
-      const r = await api("/api/pm/apply", { preview_id: p.preview_id });
-      toast(r.ok ? `Created ${r.created}, updated ${r.updated}, unchanged ${r.unchanged}; read-back ${r.readback.verified ? "verified" : "has issues"}` : r.reason);
-      render();
+      const button = $("#hc3");
+      if (button.disabled) return;
+      button.disabled = true;
+      $("#prev").disabled = true;
+      setPmSyncStatus("pending", "Approving HC3…");
+      try {
+        await api("/api/approve", { checkpoint: "HC3", item_id: p.preview_id, approver: who, decision: "approved" });
+        setPmSyncStatus("pending", "HC3 approved. Writing to the PM board and verifying…");
+        const r = await api("/api/pm/apply", { preview_id: p.preview_id });
+        if (!r.ok) throw new Error(r.reason || "PM board write failed");
+        const counts = `Created ${r.created}, updated ${r.updated}, unchanged ${r.unchanged}.`;
+        if (r.readback?.verified) {
+          setPmSyncStatus("success", `HC3 write complete. ${counts} Read-back verified.`);
+        } else {
+          setPmSyncStatus("warning", `HC3 write complete. ${counts} Read-back has issues; check the board.`);
+        }
+      } catch (e) {
+        setPmSyncStatus("error", `HC3 write not completed: ${e.message || "Unknown error"}`);
+        button.disabled = false;
+        $("#prev").disabled = false;
+        return;
+      }
+      try { await vPM(); } catch (e) { toast(`Board refresh failed: ${e.message}`); }
     };
   };
   $("#rb").onclick = async () => {
@@ -526,10 +560,110 @@ const VIEWS = { dashboard: vDashboard, overview: vOverview, planning: vPlanning,
 /* ------------------------------------------------------------ Login / session */
 function showLogin() {
   ME = null;
+  pmSyncStatus = null;
+  window.HCH_I18N.setLanguage("en");
   $("#login").hidden = false; $("#userbox").hidden = true;
   document.body.classList.add("locked");
-  setTimeout(() => $("#l-user").focus(), 0);
+  loadIdentities();
 }
+const IDENTITY_ROLES = { admin: "System Admin", project_manager: "Project Manager",
+  group_leader: "Group Leader", supervisor: "Supervisor" };
+async function loadIdentities() {
+  const box = $("#identities");
+  $("#l-err").hidden = true;
+  try {
+    const r = await fetch("/api/identities");
+    if (!r.ok) throw new Error("Could not load identities");
+    const { identities } = await r.json();
+    box.innerHTML = identities.map((u) => `<button type="button" class="acct" data-u="${esc(u.username)}">
+      <span class="rolechip r-${esc(u.role)}">${esc(IDENTITY_ROLES[u.role] || u.role)}</span>
+      <small>${esc(u.display_name)} · ${esc(u.username)}</small></button>`).join("") || "No active accounts";
+    box.querySelectorAll(".acct").forEach((button) => button.onclick = () => selectIdentity(button));
+    box.querySelector(".acct")?.focus();
+  } catch (e) {
+    box.textContent = "";
+    $("#l-err").textContent = e.message;
+    $("#l-err").hidden = false;
+  }
+}
+async function selectIdentity(button) {
+  $("#l-err").hidden = true;
+  button.disabled = true;
+  try {
+    const r = await fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: button.dataset.u }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || "Sign-in failed");
+    const m = await api("/api/me"); ROLES_META = m.roles;
+    enterApp(j.user);
+  } catch (e) {
+    $("#l-err").textContent = e.message;
+    $("#l-err").hidden = false;
+    button.disabled = false;
+  }
+}
+let resetPreview = null;
+function setResetStatus(state, message) {
+  $("#reset-status").innerHTML = state ? `<div class="pm-sync-status ${state}">
+    ${state === "pending" ? '<span class="pm-sync-spinner" aria-hidden="true"></span>' : ""}${esc(message)}</div>` : "";
+}
+$("#reset-demo").onclick = async () => {
+  const button = $("#reset-demo");
+  button.disabled = true;
+  $("#reset-details").hidden = true;
+  resetPreview = null;
+  setResetStatus("pending", "Checking reset scope…");
+  try {
+    const response = await fetch("/api/reset/preview");
+    const preview = await response.json();
+    if (!response.ok) throw new Error(preview.error || "Reset preview failed");
+    resetPreview = preview;
+    $("#reset-scope").innerHTML = preview.jira_enabled
+      ? `<p><span>Jira site:</span> <b>${esc(preview.site)}</b><br><span>Project:</span> <b>${esc(preview.project)}</b><br><span>Project issues to delete:</span> <b>${preview.jira_count}</b><br><span>Local board items to clear:</span> <b>${preview.mock_count}</b></p>`
+      : `<p><span>Mock board only.</span> <span>Local board items to clear:</span> <b>${preview.mock_count}</b>. <span>No Jira issues will be deleted.</span></p>`;
+    $("#reset-jira-note").hidden = !preview.jira_enabled;
+    $("#reset-keys-box").hidden = !preview.jira_keys.length;
+    $("#reset-keys").textContent = preview.jira_keys.join(", ");
+    $("#reset-confirm-text").value = "";
+    $("#reset-confirm-text").placeholder = preview.jira_enabled ? "Type the Jira project key to confirm" : "Type RESET to confirm";
+    $("#reset-confirm").disabled = true;
+    $("#reset-details").hidden = false;
+    setResetStatus(null);
+  } catch (e) {
+    setResetStatus("error", e.message || "Reset preview failed");
+  } finally {
+    button.disabled = false;
+  }
+};
+$("#reset-confirm-text").oninput = () => {
+  $("#reset-confirm").disabled = !resetPreview || $("#reset-confirm-text").value !== resetPreview.confirm_text;
+};
+$("#reset-cancel").onclick = () => {
+  resetPreview = null;
+  $("#reset-details").hidden = true;
+  setResetStatus(null);
+};
+$("#reset-confirm").onclick = async () => {
+  if (!resetPreview || $("#reset-confirm-text").value !== resetPreview.confirm_text) return;
+  const buttons = [...document.querySelectorAll("#login button")];
+  buttons.forEach((button) => button.disabled = true);
+  setResetStatus("pending", "Clearing project data and restoring the baseline…");
+  try {
+    const response = await fetch("/api/reset/restore", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ confirm: resetPreview.confirm_text, preview_id: resetPreview.preview_id }) });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Reset failed");
+    resetPreview = null;
+    $("#reset-details").hidden = true;
+    setResetStatus("success", `Reset complete. ${result.jira_deleted} Jira issues deleted; baseline restored.`);
+    await loadIdentities();
+  } catch (e) {
+    setResetStatus("error", e.message || "Reset failed");
+  } finally {
+    buttons.forEach((button) => button.disabled = false);
+    $("#reset-confirm").disabled = !resetPreview || $("#reset-confirm-text").value !== resetPreview.confirm_text;
+  }
+};
 function enterApp(user) {
   ME = user;
   $("#login").hidden = true; $("#userbox").hidden = false;
@@ -544,18 +678,12 @@ function enterApp(user) {
   const t = location.hash.slice(1);
   selectTab(VIEWS[t] && user.views.includes(t) ? t : "dashboard");
 }
-$("#login-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  $("#l-err").hidden = true;
-  const r = await fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: $("#l-user").value, password: $("#l-pw").value }) });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) { $("#l-err").textContent = j.error || "Sign-in failed"; $("#l-err").hidden = false; return; }
-  $("#l-pw").value = "";
-  const m = await api("/api/me"); ROLES_META = m.roles;
-  enterApp(j.user);
-});
-document.querySelectorAll("#login .acct").forEach((b) => (b.onclick = () => { $("#l-user").value = b.dataset.u; $("#l-pw").value = b.dataset.p; $("#l-pw").focus(); }));
-$("#logout").onclick = async () => { await fetch("/api/logout", { method: "POST" }); main.innerHTML = ""; showLogin(); };
+$("#logout").onclick = async () => {
+  const r = await fetch("/api/logout", { method: "POST" });
+  if (!r.ok) { toast("Sign out failed"); return; }
+  main.innerHTML = "";
+  history.replaceState(null, "", "#dashboard");
+  showLogin();
+};
 fetch("/api/me").then((r) => (r.ok ? r.json() : null)).then((m) => { if (m && m.user) { ROLES_META = m.roles; enterApp(m.user); } else showLogin(); })
   .catch(() => showLogin());
