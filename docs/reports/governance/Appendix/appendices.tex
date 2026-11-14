@@ -1,0 +1,182 @@
+\chapter{Approval rows of the demonstration run}
+\label{app:approvals}
+
+Table~\ref{tab:appapprovals} reproduces the ten rows of \code{docs/governance/evidence/approvals.csv}. All rows have the timestamp 2026-11-14T18:00:11+08:00. Every comment begins with the prefix ``Demonstration run, scripted'', which is omitted below. The role label is the label stored with the approval; the approver is the seeded role account, not a verified person; see Section~\ref{sec:demoapprovals}.
+
+\begin{table}[htbp]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\caption{Rows of \texttt{approvals.csv}}
+\label{tab:appapprovals}
+\begin{tabularx}{\textwidth}{>{\raggedleft\arraybackslash}p{0.35cm}>{\raggedright\arraybackslash}p{2.9cm}>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{1.6cm}>{\raggedright\arraybackslash}p{1.9cm}>{\raggedright\arraybackslash}p{1.1cm}>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{id} & \textbf{Checkpoint} & \textbf{Item type, id} & \textbf{Approver} & \textbf{Role label} & \textbf{Decision} & \textbf{Comment, shortened} \\
+\midrule
+1 & HC1 Scope statement \& Sponsor Questions sign-off & gaps, \code{072aec9495dc} & Project Manager & Team PM lead & approved & scope and Sponsor Questions reviewed \\
+2 & HC2 WBS, dictionary \& milestone plan baseline approval & plan, \code{2656fb7c1a17} & Project Manager & Team PM lead & approved & WBS, dictionary and milestones baselined \\
+3 & HC3 PM tool write confirmation, diff preview & sync\_preview, \code{d252c479f4b9} & Project Manager & Tool integration owner & approved & sync preview: create 92 \\
+4 & HC3 PM tool write confirmation, diff preview & sync\_preview, \code{c9ad4f3eb54a} & Project Manager & Tool integration owner & approved & re-sync to show idempotency \\
+5 & HC4 Risk register \& what-if publication & risk\_register, \code{abb8ad434b95} & Group Leader & Risk owner, team & approved & risk register and what-ifs reviewed \\
+6 & HC5 Report release after Critic pass & report, EDC-2027-03-31-v1 & Group Leader & Reporting owner, team & approved & EDC update released after Critic PASS \\
+7 & HC6 Change-impact actions approval & action, CE-01-A01 & Project Manager & Team PM lead & approved & re-score accepted \\
+8 & HC6 Change-impact actions approval & action, CE-01-A04 & Project Manager & Team PM lead & approved & comment + label the affected PM item \\
+9 & HC6 Change-impact actions approval & action, CE-01-A14 & Project Manager & Team PM lead & \textcolor{pmOrange}{\textbf{rejected}} & wording to be agreed with the sponsor first \\
+10 & HC7 Bias \& fairness sign-off on consultation summary & bias\_check, BIAS-1 & Supervisor & Governance lead & approved & findings B1--B6 accepted; actions to Community Engagement \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\chapter{Reset check results}
+\label{app:reset}
+
+Table~\ref{tab:appreset} gives the results recorded in \code{docs/governance/evidence/reset_check.json}, generated on 2026-11-14T18:00:12+08:00. Mode: baseline with no LLM, mock board, Jira credentials blanked; \code{jira_reset_enabled} is \texttt{false}, so no Jira deletion was exercised.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Reset check: table counts before and after the reset}
+\label{tab:appreset}
+\begin{tabular}{lrr}
+\toprule
+\textbf{Table / count} & \textbf{Before} & \textbf{After} \\
+\midrule
+PM issues & 92 & 0 \\
+\code{approvals} & 2 & 0 \\
+\code{decisions} & 0 & 0 \\
+\code{audit_log} & 140 & 166 \\
+users & 4 & 4 \\
+\bottomrule
+\end{tabular}
+
+\bigskip
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}p{1.6cm}>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Check} & \textbf{Status code} & \textbf{Response} \\
+\midrule
+Preview & --- & Jira enabled: false; Jira count 0; mock count 92; confirmation text \texttt{RESET} \\
+Wrong confirmation & 400 & ``Preview the reset and type RESET to confirm'' \\
+Stale \code{preview_id} & 409 & ``Project data changed since the preview; preview the reset again'' \\
+Valid reset & 200 & reset: true; Jira deleted: 0 \\
+\midrule
+Audit log kept & --- & true \\
+Reset audit row & --- & system actor \texttt{orchestrator}, action \texttt{initial demo restored}, outcome \texttt{ok} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\chapter{Audit action counts}
+\label{app:actions}
+
+Table~\ref{tab:appactions} counts the 188 rows of \code{docs/governance/evidence/audit_log.csv} by action and actor type. The 169 agent rows match \code{counts.by_action} in \code{summary.json}; the 19 system and human rows are computed directly from \code{audit_log.csv}.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\caption{Audit rows by action, audit\_log.csv, 188 rows}
+\label{tab:appactions}
+\begin{minipage}[t]{0.49\textwidth}
+\vspace{0pt}\centering
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}Xlr}
+\toprule
+\textbf{Action} & \textbf{Actor type} & \textbf{Rows} \\
+\midrule
+\act{pm create} & agent & 92 \\
+\act{pm link} & agent & 18 \\
+\act{output generated (baseline)} & agent & 9 \\
+\act{handoff} & agent & 9 \\
+\act{mark stale} & agent & 8 \\
+\act{write report draft} & agent & 6 \\
+\act{critic critic\_passed} & agent & 6 \\
+\act{write what-if} & agent & 4 \\
+\act{pm sync applied} & agent & 2 \\
+\act{pm readback} & agent & 2 \\
+\act{pm preview (read-only)} & agent & 2 \\
+\act{write risk register} & agent & 1 \\
+\act{write plan} & agent & 1 \\
+\act{risk re-scored (approved)} & agent & 1 \\
+\act{pm update} & agent & 1 \\
+\act{pm comment} & agent & 1 \\
+\act{change impact note drafted} & agent & 1 \\
+\act{change event received} & agent & 1 \\
+\bottomrule
+\end{tabularx}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.49\textwidth}
+\vspace{0pt}\centering
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}Xlr}
+\toprule
+\textbf{Action} & \textbf{Actor type} & \textbf{Rows} \\
+\midrule
+\act{bias \& fairness check written} & agent & 1 \\
+\act{BLOCKED: transition to Done} & agent & 1 \\
+\act{BLOCKED: delete} & agent & 1 \\
+\act{BLOCKED: close} & agent & 1 \\
+\act{user created} & system & 4 \\
+\act{ingest} & system & 1 \\
+\act{run start: full} & system & 1 \\
+\act{run end: full} & system & 1 \\
+\act{checkpoint HC1 approved} & human & 1 \\
+\act{checkpoint HC2 approved} & human & 1 \\
+\act{checkpoint HC3 approved} & human & 2 \\
+\act{checkpoint HC4 approved} & human & 1 \\
+\act{checkpoint HC5 approved} & human & 1 \\
+\act{checkpoint HC6 approved} & human & 2 \\
+\act{checkpoint HC6 rejected} & human & 1 \\
+\act{checkpoint HC7 approved} & human & 1 \\
+\act{access denied: HC2} & human & 1 \\
+\act{release refused} & human & 1 \\
+\midrule
+\textbf{Total} & & \textbf{188} \\
+\bottomrule
+\end{tabularx}
+\end{minipage}
+\end{table}
+
+By outcome, the 188 rows are 174 \texttt{ok}, 9 \texttt{fallback} and 5 \texttt{blocked}, namely audit \#26 and \#148--151; no row has outcome \texttt{rejected} or \texttt{error}. The HC6 rejection of CE-01-A14 is recorded as the action \act{checkpoint HC6 rejected} with outcome \texttt{ok}.
+
+\chapter{Reproduction commands}
+\label{app:repro}
+
+Both evidence sets are regenerated on a throw-away database against the mock board; the reset check also blanks the Jira credentials.
+
+\begin{lstlisting}[language=bash,numbers=none]
+# Demonstration run: audit_log.csv, agent_writes.csv, approvals.csv,
+# bias_check.json, change_impact_CE-01.md, summary.json
+python3 scripts/governance_demo.py
+
+# Reset check: reset_check.json, mock board, Jira credentials blanked
+python3 scripts/reset_check.py
+\end{lstlisting}
+
+The team's real records are exported with the Governance export in the UI.
+
+\chapter{Jira snapshot of the team's real run}
+\label{app:jira}
+
+Table~\ref{tab:appjira} summarises \code{docs/governance/evidence/jira_snapshot_2026-11-14.json}, taken on 14 Nov 2026 with read-only requests and no write. The Jira Cloud Free plan is a team statement.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Read-only Jira snapshot, 14 Nov 2026}
+\label{tab:appjira}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{5.2cm}>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Field} & \textbf{Value} \\
+\midrule
+Project; plan & \code{SCRUM}; Jira Cloud Free, team statement \\
+Issues; key range & 92; \code{SCRUM-283} to \code{SCRUM-374} \\
+Created between & 2026-11-14 16:51:09 and 16:52:10 SGT \\
+Issue types and hierarchy level & 长篇故事 6 at level 1, 任务 37 at level 0, 子任务 49 at level $-1$ \\
+Status & all 92 \texttt{Idea} \\
+With \texttt{ai-generated} label & 92 \\
+With external-key label; distinct keys & 92; 92 \\
+With parent & 68 \\
+Milestone items & 18 \\
+Issue links & 18 Blocks links; 36 link ends seen \\
+\texttt{change-*} labels & none \\
+\bottomrule
+\end{tabularx}
+\end{table}

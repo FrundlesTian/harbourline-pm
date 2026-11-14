@@ -1,0 +1,39 @@
+\chapter{What was evaluated and how}
+\label{ch:setup}
+
+This report covers the MA6094 Capstone, Group~5, as of 14 November 2026. It is a draft for team review. Team: Group~5, no team name. Evaluation owner: Qu Chengzhi, G2510533D.
+
+The evaluation harness is \code{eval/run_eval.py}. It has 34 test cases, T01--T34, and computes five measures, set out in Chapter~\ref{ch:measures}. All results in this report come from the latest code on branch \code{main}. Quantifying such properties of an AI system before it is relied on corresponds to the Measure function of the NIST AI Risk Management Framework \parencite{nist2023airmf}.
+
+\section{Isolation}
+\begin{itemize}
+  \item Each run uses a throw-away SQLite database, so the demo database is never touched.
+  \item The PM tool is always the local mock board, which implements the same data contract as the Jira adapter. Jira is used only with \code{--jira}, and that was not used here.
+\end{itemize}
+
+\section{Fault injection and ground truth}
+Planted Critic faults come from \code{eval/faults.py}. Brief-gap ground truth is \code{eval/gold_gaps.json}: 22 gaps the team identified in the brief.
+
+\section{Two modes}
+Both modes were run on 14 November 2026; Table~\ref{tab:modes} summarises them.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\caption{The two evaluation modes}
+\label{tab:modes}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{2.15cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{3.0cm}>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Mode} & \textbf{What generates the plan, register, reports and change analysis} & \textbf{Command} & \textbf{Evidence} \\
+\midrule
+\textbf{Baseline}, deterministic & Curated, hand-checked tables; no LLM calls & \texttt{python3 eval/run\_eval.py -{}-no-llm} & \code{eval/results/latest.md}, \code{latest.json} \\
+\addlinespace
+\textbf{LLM}, system default & DeepSeek \code{deepseek-chat} at temperature 0, validated and checked by the Critic & \texttt{python3 eval/run\_eval.py} & \code{docs/evaluation/evidence/eval_llm_deepseek_2026-11-14_final.log}, \code{llm_results_2026-11-14.json} and \code{.md} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Gemini is configured as the first provider but has no key on the evaluation machine, so every LLM call went to DeepSeek. The course instructor has accepted the use of DeepSeek, according to the team.
+
+\section{Tests check behaviour, not baseline IDs}
+The first LLM-mode evaluation on 8 November 2026 passed 27 of 33 cases. Most failures came from checks that expected the IDs or counts of the curated baseline, such as WBS element \code{3.2.3}, risk R22, re-score targets R06 and R17, or exactly four flagged WBS candidates. A generated plan numbers its items differently. On 14 November 2026 these checks were rewritten to test the behaviour instead, and T34 was added for a memory defect found in review. Chapter~\ref{ch:defects} lists each change.

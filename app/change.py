@@ -176,6 +176,15 @@ def _llm_specific(eid, ev, wbs, ms, risks, dels):
         audit.log(AGENT, "reject generated cost line", "change_event", eid, outcome="rejected",
                   detail={"text": c["text"][:200], "problems": p[:4]})
     cost = [c for c in cost if not critic.trace_claim(c)]
+    rescore = [p for p in data.get("rescore", []) if isinstance(p, dict)]
+    if risks and not risk.rescore_proposals(eid, rescore):
+        # affected risks but no valid re-score: ask once, only for the re-scores
+        ask = user + ("\n\nYOUR PREVIOUS ANSWER proposed no valid re-score. For each affected risk above whose "
+                      "likelihood or impact changes because of the event, return a re-score that differs from its "
+                      'current L and I. Return {"rescore":[{"risk":"R01","likelihood":4,"impact":5,"rationale":""}]}')
+        more, _ = llm.cached_json(AGENT, system, ask, max_tokens=1500)
+        if more and isinstance(more.get("rescore"), list):
+            data["rescore"] = more["rescore"]
     decisions = [{"what": str(d.get("what", "")).strip(), "who": str(d.get("who", "")).strip() or "NOT FOUND",
                   "when": str(d.get("when", "")).strip() or "NOT FOUND", "sources": gen.known(d.get("sources"))}
                  for d in data.get("decisions", []) if isinstance(d, dict) and str(d.get("what", "")).strip()]
@@ -273,6 +282,12 @@ def analyse(eid):
         audit.log(AGENT, "mark stale", t, i, detail={"event": eid, "reason": why})
 
     cost, decisions, unresolved, extra = _specific(eid, ev, wbs, ms, risks, dels)
+    # Detected conflicts the event touches (same tag rule as staleness) stay UNRESOLVED in the note,
+    # whether or not the generated analysis named them.
+    named = " ".join(u["item"] for u in unresolved)
+    for c in db.q("SELECT * FROM conflicts ORDER BY id"):
+        if hit(c["tags"]) and c["id"] not in named:
+            unresolved.append({"item": f"CONFLICT {c['id']} ({c['topic']}): {c['detail']}", "sources": db.L(c["sources"])})
     for c in cost:   # the change agent's own claims are critic-checked too
         probs = critic.trace_claim(c)
         c["trace"] = "ok" if not probs else probs

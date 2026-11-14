@@ -1,0 +1,11 @@
+\chapter{How to reproduce}
+\label{ch:reproduce}
+
+The commands below, run from the repository root, reproduce the evaluation and the supporting evidence. The baseline run writes \code{eval/results/latest.md} and \code{eval/results/latest.json}; its per-case output is reproduced in Appendix~\ref{app:baseline}.
+
+\begin{lstlisting}[numbers=none]
+python3 eval/run_eval.py --no-llm        # baseline, about 1 s, writes eval/results/latest.*
+python3 eval/run_eval.py                 # LLM mode, a few minutes and about US$0.03
+python3 scripts/governance_demo.py       # demonstration run and exports for the Governance Log
+python3 scripts/reset_check.py           # Reset demo check on the mock board, no Jira
+\end{lstlisting}

@@ -1,0 +1,33 @@
+\chapter{Architecture}
+\label{ch:architecture}
+
+Figure~\ref{fig:architecture} shows the agents, the stores they read and write, the human checkpoints and the PM tool. It is redrawn from the full Mermaid diagram in \code{docs/design/architecture.mmd}.
+
+\begin{figure}[htbp]
+  \centering
+  \resizebox{\textwidth}{!}{\input{fig/architecture}}
+  \caption[System architecture: agents, hand-offs, human checkpoints and the PM tool]{System architecture. Thick orange arrows are automatic hand-offs: Planning $\rightarrow$ Risk carries WBS + milestones, Risk $\rightarrow$ Reporting the register + what-ifs, Reporting $\rightarrow$ Critic the draft + claims, and Change $\rightarrow$ Reporting the refreshed stale reports. Each hand-off is written to the \texttt{handoffs} table by \texttt{audit.handoff}, see \texttt{app/audit.py:52-57}. Yellow hexagons are human checkpoints; dotted grey arrows are LLM calls, the Critic's revision loop and log writes; the dashed Reset demo path is a human maintenance action outside the agents, described in Chapter~\ref{ch:datacontract}.}
+  \label{fig:architecture}
+\end{figure}
+
+\section{Stack as built}
+
+The system uses the Python 3 standard library only: \code{ThreadingHTTPServer} in \code{server.py:482-499}, a vanilla HTML/JS front end in \code{static/}, and SQLite for every store including the audit log, see \code{app/db.py}. The LLM client calls OpenAI-compatible chat endpoints and tries providers in order: \textbf{Gemini via Google AI Studio first, DeepSeek as backup}, see \code{app/config.py:27-59} and \code{app/llm.py:66-115}. A failed call is logged and retried on the next provider, see \code{app/llm.py:72-80}. The PM tool is Jira Cloud REST v3, with a local mock board that implements the same contract in \code{app/pmtool.py:71-135}.
+
+Since 11 Nov 2026 there is \textbf{no password}, by design for the demo. The start screen lists the active accounts and the user picks one, see \code{app/auth.py:129-148} and \texttt{GET /api/identities}. The chosen account's role is then enforced server-side on every call, see \code{app/auth.py:184-202} and \code{server.py:352-378}. The start screen also offers \textbf{Reset demo}, described in Chapter~\ref{ch:datacontract}. There is no Streamlit UI and no JSONL log; the UI runs locally at \code{http://127.0.0.1:8000} and opens in English, as set in \code{app/config.py} and \code{static/i18n.js}.
+
+\section{One full run}
+\label{sec:fullrun}
+
+One full run is started by \texttt{POST /api/run} and implemented in \code{app/pipeline.py:21-33}. It proceeds as follows:
+
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item \code{init} chunks the pack into 415 line-addressed chunks, builds the BM25 index \parencite{robertson2009bm25}, verifies the facts and restores human decisions, see \code{app/pipeline.py:10-18}.
+  \item \textbf{Planning} generates scope, Sponsor Questions, WBS and milestones, runs the conflict detectors, filters untraceable WBS elements and hands the WBS to Risk, see \code{app/planning.py:490-561}.
+  \item \textbf{Risk} generates the register from the seed register, pack evidence and WBS, validates it, computes what-ifs W1--W3 and hands off to Reporting, see \code{app/risk.py:238-279}.
+  \item \textbf{Governance} recomputes the bias check in \code{app/governance.py:43-107}.
+  \item \textbf{Reporting} drafts the EDC update and NRF report; the Critic checks each draft, and STOP findings go back to the model up to three times, see \code{app/reporting.py:221-238}.
+  \item Tokens, cost and seconds are recorded per run in \code{app/audit.py:89-116}.
+\end{enumerate}
+
+Then a person approves HC2, Tool integration shows a read-only diff, a person approves HC3 for that diff, and \code{apply} writes and reads back, see \code{app/pmtool.py:482-592} and Figure~\ref{fig:pmwrite}. Temperature 0.0 plus a response cache keyed on model chain + prompt, implemented in \code{app/llm.py:34-63}, make a re-run on the same database reproduce the plan, register and board, so HC2/HC4 hashes stay valid.

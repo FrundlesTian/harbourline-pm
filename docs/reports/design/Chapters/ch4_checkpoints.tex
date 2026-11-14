@@ -1,0 +1,41 @@
+\chapter{Human checkpoint map}
+\label{ch:checkpoints}
+
+Checkpoints are defined in \code{app/audit.py:16-31}. The server records every approval under the selected session account, never a typed name, see \code{server.py:118-143}, and checks that account's role first in \code{app/auth.py:184-202}. Approvals go to the \code{approvals} table with approver, role, account, decision, comment and timestamp; the table is defined in \code{app/db.py:58-60} with migrations at \code{:95-98}. Each approval is mirrored in \code{audit_log}. \textbf{The account is chosen without a password}, so an approval shows which account approved, not which person; this is limitation L7 in Section~\ref{sec:limitations}. The start-screen \textbf{Reset demo} deletes the \code{approvals} table together with the other demo data; the mirrored rows in \code{audit_log} remain, as Chapter~\ref{ch:governance} explains.
+
+Table~\ref{tab:checkpoints} lists the seven checkpoints, what each is bound to, and what happens if it is rejected or skipped. Keeping accountable decisions with named roles at defined points follows the governance practice in the PMBOK Guide \parencite{pmi2021pmbok7}.
+
+{\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.8cm}>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{2.3cm}>{\raggedright\arraybackslash}p{2.3cm}>{\raggedright\arraybackslash}p{4.1cm}@{}}
+\caption{Human checkpoint map}\label{tab:checkpoints}\\
+\toprule
+\textbf{ID} & \textbf{What is approved, bound to} & \textbf{Shown to the approver} & \textbf{Approver RBAC role and account} & \textbf{On reject} & \textbf{If skipped, what is stale or unprotected} \\
+\midrule
+\endfirsthead
+\multicolumn{6}{@{}l}{\small\itshape Table~\thetable\ continued}\\
+\toprule
+\textbf{ID} & \textbf{What is approved, bound to} & \textbf{Shown to the approver} & \textbf{Approver RBAC role and account} & \textbf{On reject} & \textbf{If skipped, what is stale or unprotected} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+HC1 & Scope + Sponsor Questions register, \code{gaps_hash} & Planning page: scope, questions, answers, assumptions, conflicts & \code{project_manager}, Project Manager account & Rejection recorded; plan stays in draft & \textbf{Record only:} no code path is blocked by HC1. Questions reach the sponsor unreviewed. \\
+HC2 & Plan baseline, \code{plan_hash} of WBS + milestones & WBS, dictionary, milestones, dependency issues & \code{project_manager}, Project Manager account & \code{preview} refuses to run & \textbf{Enforced:} no PM sync is possible, \code{app/pmtool.py:485-486}; any plan change needs re-approval \\
+HC3 & One sync diff, \code{preview_id} & Per-item create / update / unchanged list & \code{project_manager}, Project Manager account & \code{apply} refuses, \code{app/pmtool.py:528-531} & \textbf{Enforced:} no write to Jira. Limitation: Section~\ref{sec:limitations}, L2 \\
+HC4 & Risk register version, \code{risk_hash} & Register, seed QA, what-ifs & \code{group_leader}, Group Leader account & Rejection recorded & \textbf{Record only:} reports still draw top-five risks from an unapproved register \\
+HC5 & Release of one report & Report, claims, Critic findings & \code{group_leader}, Group Leader account & Report stays a draft & \textbf{Enforced:} only \code{critic_passed} drafts can be released, \code{app/reporting.py:291-301} \\
+HC6 & One change action: re-score, PM comment + label, milestone note or assumption update & Change Impact Note and the action payload & \code{project_manager}, Project Manager account & Action marked rejected; nothing applied & \textbf{Enforced:} actions apply only in \code{approve_action}, \code{app/change.py:388-431}; risks stay at old scores \\
+HC7 & Bias \& fairness check BIAS-1 & Findings B1--B6, re-weighted ranks, translations & \code{supervisor}, Supervisor account & Status ``rejected'' & \textbf{Record only:} status shown; no code consumes the consultation summary \\
+\end{longtable}
+}
+
+The role strings in \code{app/audit.py}, such as ``Team PM lead'', are older labels; the RBAC role is what is checked.
+
+\section{Not automated, by design}
+
+\begin{itemize}[leftmargin=*,itemsep=2pt]
+  \item \textbf{Moving items to Done, closing, resolving or deleting.} The brief makes these human acts in L247--L248. \code{Guarded} blocks them and logs \code{BLOCKED}, see \code{app/pmtool.py:378-390}; the forbidden fields are \code{status}, \code{resolution} and \code{resolutiondate}, listed in \code{app/pmtool.py:29}. Read-back reports items a human moved to Done, see \code{app/pmtool.py:586}.
+  \item \textbf{Sponsor decisions}, such as closure priority in \code{SA-Q3}, contingency status in \code{EDC-1.2} or rooftop deferral in \code{EDC-6.3}. These appear as decisions with who and when, or as NOT FOUND, never as choices made by the agent, see \code{app/change.py:188-190}.
+  \item \textbf{Report release at HC5 and risk re-scoring at HC6.} Agents propose; a person accepts, because the reports go to external bodies and scores drive the top-five list.
+\end{itemize}

@@ -1,0 +1,46 @@
+\chapter{Audit records of agent write operations}
+\label{ch:audit}
+
+\section{Audit schema}
+
+Each audit row has the fields \code{id}, \code{ts}, \code{run_id}, \code{actor}, \code{actor_type}, \code{action}, \code{target_type}, \code{target_id}, \code{outcome} and \code{detail}, defined in \code{app/db.py:61-64}. The actor type is \texttt{agent}, \texttt{human} or \texttt{system}. The outcome is \texttt{ok}, \texttt{blocked}, \texttt{rejected}, \texttt{fallback} or \texttt{error}, and the detail is JSON. Each agent write calls \code{audit.log()}, see \code{app/audit.py:43-49}; PM writes are logged inside the guarded adapter in \code{app/pmtool.py:356-376}.
+
+\section{Agent writes in the demonstration run}
+
+Table~\ref{tab:agentwrites} groups the 137 agent-write rows of \code{agent_writes.csv} by agent and write action, with one example per group. Figure~\ref{fig:auditbars} shows the same rows by agent, together with the outcome of all 188 audit rows.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\caption{Agent writes in the demonstration run, agent\_writes.csv, 137 rows}
+\label{tab:agentwrites}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{1.8cm}>{\raggedright\arraybackslash}p{3.6cm}>{\raggedleft\arraybackslash}p{1.0cm}>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Agent} & \textbf{Write action} & \textbf{Rows} & \textbf{Example: audit id $\rightarrow$ target} \\
+\midrule
+planning & \act{write plan} & 1 & \#8: 17 scope lines, 20 Sponsor Questions, 12 conflicts, 74 WBS elements, 18 milestones \\
+risk & \act{write risk register}, \act{write what-if} & 1 + 4 & \#11: 22 risks; \#12: W1 v1 \\
+governance & \act{bias \& fairness check written} & 1 & \#16 $\rightarrow$ BIAS-1, 6 findings \\
+reporting & \act{write report draft} & 6 & \#18 $\rightarrow$ EDC-2027-03-31-v1, hash recorded \\
+tooling & \act{pm create} & 92 & \#31 $\rightarrow$ mock issue for \code{ext-HCH-WBS-1} \\
+tooling & \act{pm link}, Blocks & 18 & \#123 $\rightarrow$ milestone dependency \\
+tooling & \act{pm sync applied} & 2 & \#141: 92 created; second sync 0 created / 0 updated / 92 unchanged \\
+change & \act{mark stale}, \act{change impact note drafted} & 8 + 1 & \#154 $\rightarrow$ R01 stale, tags budget, eligible-cost, grant; \#173 $\rightarrow$ CE-01 \\
+risk & \act{risk re-scored (approved)} & 1 & \#175 $\rightarrow$ R01 20 $\rightarrow$ 25, \textbf{only after HC6} \\
+change & \act{pm comment}, \act{pm update} with label & 1 + 1 & \#185--186: comment and \code{change-ce-01} label on the WBS 1.2.2 item, \textbf{only after HC6} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\input{fig/audit_bars}
+
+\section{Coverage check}
+
+\begin{itemize}
+\item Every PM issue has a \act{pm create} row: 92 issues, 92 rows. Evaluation test T30 checks the same rule: 92 rows for 92 issues in baseline mode, 118 for 118 in LLM mode.
+\item No agent write to the PM tool happened before HC2 and HC3 were approved: rows \#31 onwards follow approvals \#2 and \#3.
+\end{itemize}
+
+\section{Hand-offs without a human in between}
+
+The \code{handoffs} table records four agent-to-agent hand-offs that pass without a human checkpoint: planning $\rightarrow$ risk, risk $\rightarrow$ reporting, reporting $\rightarrow$ critic and change $\rightarrow$ reporting. Evaluation test T31 checks them.

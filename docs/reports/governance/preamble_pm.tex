@@ -1,0 +1,68 @@
+%=== Harbourline report additions (loaded after the NTU template preamble) ===
+% ---- Fonts (LuaLaTeX): Times-like text, Menlo code, CJK fallback for the few Chinese labels ----
+\setmainfont{Times New Roman}
+\setsansfont{Helvetica Neue}
+\setmonofont{Menlo}[Scale=0.82]
+\setCJKmainfont{Songti SC}[BoldFont={Heiti SC}, ItalicFont={Songti SC}, BoldItalicFont={Heiti SC}]
+\setCJKsansfont{Heiti SC}
+\setCJKmonofont{Heiti SC}
+
+% ---- Drawing / charts / tables ----
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,shapes.geometric,shapes.misc,calc,fit,backgrounds,decorations.pathreplacing,matrix}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{pifont}
+\newcommand{\cmark}{\ding{51}}
+\newcommand{\xmark}{\ding{55}}
+\usepackage{xurl}
+
+% ---- Colour palette used by every figure ----
+\definecolor{pmOrange}{HTML}{E64B35}
+\definecolor{pmNavy}{HTML}{3C5488}
+\definecolor{pmBlue}{HTML}{4DBBD5}
+\definecolor{pmTeal}{HTML}{00A087}
+\definecolor{pmGrey}{HTML}{8C8C8C}
+\definecolor{pmLight}{HTML}{F2F2F2}
+\definecolor{hcFill}{HTML}{FFF4D6}
+\definecolor{hcLine}{HTML}{B07D00}
+\definecolor{riskLow}{HTML}{FEE5D9}
+\definecolor{riskMid}{HTML}{FCAE91}
+\definecolor{riskHigh}{HTML}{FB6A4A}
+\definecolor{riskCrit}{HTML}{CB181D}
+
+% ---- Code paths and identifiers: \code{app/pmtool.py:485-486} (breakable, no % or # inside) ----
+\DeclareUrlCommand\code{\urlstyle{tt}}
+
+% ---- Fluorescent-yellow markers for information only the team can supply ----
+% \missing{...} : [NEEDS INPUT] in the Markdown source; \confirm{...} : inferred, team must confirm
+% Both are collected, with page numbers, into the "Items to complete" list (\listofmissing).
+\usepackage{luacolor}
+\usepackage{lua-ul}
+\definecolor{fluoYellow}{HTML}{FFF200}
+\makeatletter
+\newcounter{missingitem}
+\newcommand{\l@missingentry}[2]{\stepcounter{missingitem}\par\noindent\hangindent=2em
+  \themissingitem.\ #1\dotfill #2\par}
+\newcommand{\pm@collect}[2]{%
+  \addtocontents{mis}{\protect\l@missingentry{#1#2}{\thepage}}}
+\newcommand{\missing}[1]{\highLight[fluoYellow]{[NEEDS INPUT] #1}\pm@collect{[NEEDS INPUT] }{#1}}
+\newcommand{\confirm}[1]{\highLight[fluoYellow]{[TO CONFIRM] #1}\pm@collect{[TO CONFIRM] }{#1}}
+\newcommand{\listofmissing}{%
+  \chapter*{Items to complete (delete this page before submission)}
+  \addcontentsline{toc}{chapter}{Items to complete}
+  \noindent The items below are highlighted in yellow in the text. ``Needs input'' marks information
+  that no repository record holds and the team must supply; ``to confirm'' marks content inferred
+  from the records that the team must confirm.\par\medskip
+  \@starttoc{mis}}
+\makeatother
+
+% ---- Misc ----
+\newcommand{\term}[1]{\textsf{#1}}
+\newcommand{\evalhead}[1]{\par\medskip\noindent\textbf{#1}\quad}
+\setlength{\LTpre}{6pt}
+\setlength{\LTpost}{6pt}
+\renewcommand{\arraystretch}{1.25}
+\captionsetup{font=small,labelsep=quad}

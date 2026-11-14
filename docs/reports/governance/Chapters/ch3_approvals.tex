@@ -1,0 +1,64 @@
+\chapter{Who approved each checkpoint}
+\label{ch:approvals}
+
+The system has seven human checkpoints, HC1 to HC7. Recording who decided what, and refusing decisions from roles that do not hold the authority, is the approval and change-control discipline that project governance asks for \parencite{pmi2021pmbok7}. Figure~\ref{fig:timeline} places the checkpoints of the demonstration run in order, with the attempts that were refused.
+
+\input{fig/timeline}
+
+\section{Demonstration run: approvals.csv}
+\label{sec:demoapprovals}
+
+The approver is the selected session account. The server takes it from the session and never from a typed name, see \code{server.py:118-143}. Current passwordless identity selection does not verify the person using that account; \textbf{these demonstration approvals are not evidence of a real person's sign-off}. Incident I-13 in Chapter~\ref{ch:incidents} records this. Table~\ref{tab:approvals} lists the ten approval rows, and Appendix~\ref{app:approvals} gives the full rows of \code{approvals.csv}.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\caption{Approvals in the demonstration run, approvals.csv}
+\label{tab:approvals}
+\begin{tabularx}{\textwidth}{>{\raggedleft\arraybackslash}p{0.35cm}>{\raggedright\arraybackslash}p{2.5cm}>{\raggedright\arraybackslash}p{2.9cm}>{\raggedright\arraybackslash}p{3.1cm}>{\raggedright\arraybackslash}p{1.3cm}>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{\#} & \textbf{Checkpoint} & \textbf{Item approved} & \textbf{Approver account} & \textbf{Decision} & \textbf{Comment} \\
+\midrule
+1 & HC1 scope + Sponsor Questions & gaps \code{072aec9495dc} & Project Manager, \code{project_manager} & approved & scope and Sponsor Questions reviewed \\
+2 & HC2 plan baseline & plan \code{2656fb7c1a17} & Project Manager & approved & WBS, dictionary and milestones baselined \\
+3 & HC3 PM write & preview \code{d252c479f4b9}, 92 create & Project Manager & approved & first sync \\
+4 & HC3 PM write & preview \code{c9ad4f3eb54a}, 92 unchanged & Project Manager & approved & re-sync, idempotency \\
+5 & HC4 risk register & register \code{abb8ad434b95} & Group Leader, \code{group_leader} & approved & register and what-ifs reviewed \\
+6 & HC5 report release & EDC-2027-03-31-v1 & Group Leader & approved & released after Critic PASS \\
+7 & HC6 change action & CE-01-A01: re-score R01 & Project Manager & approved & re-score accepted \\
+8 & HC6 change action & CE-01-A04: comment + label WBS 1.2.2 & Project Manager & approved & --- \\
+9 & HC6 change action & CE-01-A14: milestone note & Project Manager & \textcolor{pmOrange}{\textbf{rejected}} & wording to be agreed with the sponsor first \\
+10 & HC7 bias sign-off & BIAS-1 & Supervisor, \code{supervisor} & approved & findings accepted \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph*{Refused, as designed.}
+\begin{itemize}
+\item The Group Leader account tried to approve HC2. It was refused before anything was recorded, and logged as \act{access denied: HC2} with outcome \texttt{blocked}. This is audit row \#26; the check is in \code{app/auth.py:196-202}.
+\item The Group Leader account tried to release a planted-fault NRF draft whose status was \code{critic_stopped}. Release was refused, as audit row \#151 shows; the check is in \code{app/reporting.py:295-298}.
+\end{itemize}
+
+12 of the 15 CE-01 actions were left pending. Nothing was applied without HC6.
+
+\section{Team's real approvals}
+
+Table~\ref{tab:realapprovals} maps each checkpoint to the role that may approve it under role-based access control, defined in \code{app/auth.py:25-57}. In the team's real run, approvals were made with the role accounts on the team's demo machine.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Team's real approvals}
+\label{tab:realapprovals}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.0cm}>{\raggedright\arraybackslash}p{3.0cm}>{\raggedright\arraybackslash}p{3.4cm}>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Checkpoint} & \textbf{RBAC role} & \textbf{Named approver} & \textbf{Date} \\
+\midrule
+HC1, HC2, HC3, HC6 & \code{project_manager} & Project Manager account & HC2 and HC3 before the Jira write of 14 Nov 2026 16:51 SGT; others on the team machine \\
+HC4, HC5 & \code{group_leader} & Group Leader account & On the team machine \\
+HC7 & \code{supervisor} & Supervisor account & On the team machine \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+HC1, HC4 and HC7 are recorded and displayed but do not block any code path; this is limitation L4 in \S4 of the design document. HC2, HC3, HC5 and HC6 are enforced in code.

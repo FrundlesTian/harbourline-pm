@@ -1,0 +1,70 @@
+% Figure: bias check charts (source: bias_check.json)
+\begin{figure}[htbp]
+\centering
+\begin{minipage}[t]{0.56\textwidth}
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  ybar, width=\linewidth, height=5.0cm, bar width=13pt,
+  ymin=0, ymax=68,
+  symbolic x coords={18--24,25--34,35--44,45--54,55--64,65+},
+  xtick=data,
+  xticklabel style={font=\footnotesize},
+  yticklabel style={font=\footnotesize},
+  ylabel={responses}, ylabel style={font=\footnotesize},
+  nodes near coords, nodes near coords style={font=\footnotesize},
+  axis x line*=bottom, axis y line*=left,
+  enlarge x limits=0.1,
+  title={a. Responses by age band, $n=214$}, title style={font=\small},
+]
+\addplot[bar shift=0pt, fill=pmBlue, draw=pmBlue] coordinates {(18--24,21) (25--34,57) (35--44,43)};
+\addplot[bar shift=0pt, fill=pmNavy, draw=pmNavy] coordinates {(45--54,31) (55--64,37)};
+\addplot[bar shift=0pt, fill=pmOrange, draw=pmOrange] coordinates {(65+,25)};
+\end{axis}
+\end{tikzpicture}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.40\textwidth}
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  ybar, width=\linewidth, height=5.0cm, bar width=16pt,
+  ymin=0, ymax=185,
+  symbolic x coords={online,paper,town hall},
+  xtick=data,
+  xticklabel style={font=\footnotesize},
+  yticklabel style={font=\footnotesize},
+  ylabel={responses}, ylabel style={font=\footnotesize},
+  nodes near coords, nodes near coords style={font=\footnotesize},
+  axis x line*=bottom, axis y line*=left,
+  enlarge x limits=0.25,
+  title={b. Responses by channel}, title style={font=\small},
+]
+\addplot[bar shift=0pt, fill=pmTeal, draw=pmTeal] coordinates {(online,160) (paper,23) (town hall,31)};
+\end{axis}
+\end{tikzpicture}
+\end{minipage}
+
+\vspace{0.6cm}
+\begin{tikzpicture}[font=\footnotesize]
+  \def\dx{4.6}
+  \node[font=\small] at (\dx/2, 0.95) {c. Top four themes: raw rank vs age-re-weighted rank};
+  \node[font=\footnotesize\bfseries, anchor=east] at (0, 0.35) {Raw: count};
+  \node[font=\footnotesize\bfseries, anchor=west] at (\dx, 0.35) {Age-re-weighted: weight};
+  % raw ranks (y = -rank * 0.65)
+  \foreach \r/\t/\v in {1/Childcare/45, 2/Communication \& trust/38, 3/Lifts \& access/37, 4/Active ageing/36}{
+    \node[anchor=east] (L\r) at (-0.15, -0.65*\r+0.35) {\r.\ \t: \v};
+    \fill[pmNavy] (0, -0.65*\r+0.35) circle (2pt);
+  }
+  \foreach \r/\t/\v in {1/Childcare/0.2061, 2/Active ageing/0.1800, 3/Lifts \& access/0.1774, 4/Communication \& trust/0.1772}{
+    \node[anchor=west] (R\r) at (\dx+0.15, -0.65*\r+0.35) {\r.\ \t: \v};
+    \fill[pmNavy] (\dx, -0.65*\r+0.35) circle (2pt);
+  }
+  % connectors: raw rank -> reweighted rank
+  \draw[pmGrey, line width=1pt] (0,-0.30) -- (\dx,-0.30);           % Childcare 1 -> 1
+  \draw[pmGrey, line width=1pt] (0,-1.60) -- (\dx,-1.60);           % Lifts 3 -> 3
+  \draw[pmOrange, line width=1.6pt] (0,-2.25) -- (\dx,-0.95);       % Active ageing 4 -> 2
+  \draw[pmBlue, line width=1.6pt] (0,-0.95) -- (\dx,-2.25);         % Communication 2 -> 4
+\end{tikzpicture}
+\caption[Bias check: response skew and theme ranks]{Bias check BIAS-1. Panel a: responses by age band, light blue under 45, navy 45--64, orange 65+; residents 65+ gave 25 or 11.7\%, under-45s 121 or 56.5\%. Panel b: responses by channel; online gave 160 of 214, 74.8\%. Panel c: rank of the top four themes by raw count and with each age band weighted equally. Active ageing rises from fourth to second and Communication \& trust falls from second to fourth, finding B4. Re-weighted values are the theme weights in the file; theme names are shortened as in finding B4. Source: \texttt{bias\_check.json}, fields \texttt{age}, \texttt{channel}, \texttt{themes\_raw}, \texttt{themes\_reweighted}, \texttt{rank\_raw} and \texttt{rank\_reweighted}.}
+\label{fig:bias}
+\end{figure}

@@ -1,6 +1,6 @@
-# Evaluation results (2026-11-08T19:21:16+08:00, LLM off)
+# Evaluation results (2026-11-14T18:01:15+08:00, LLM off)
 
-**33/33 test cases passed**
+**34/34 test cases passed**
 
 ## Five measures
 
@@ -39,11 +39,12 @@
 | T23 | Governance | Agents cannot delete, close or move to Done; attempts are logged as BLOCKED | PASS | blocked 4/4, audit rows 6 |
 | T24 | Change | CE-01: stale plan/register/reports detected, cost/time cited, CF12 conflict and decisions raised, actions pending | PASS | stale=[('milestone', 'MS11'), ('report', 'EDC-2027-03-31-v1'), ('report', 'NRF-2027-03-31-v1'), ('risk', 'R01'), ('risk', 'R08'), ('risk', 'R18'), ('risk', 'R22 |
 | T25 | Change | Stale reports refresh automatically (new version cites the event and passes the Critic) | PASS | [('EDC-2027-03-31-v2', 'critic_passed'), ('NRF-2027-03-31-v2', 'critic_passed')] |
-| T26 | Change | Nothing changes until HC6; after approval the risk is re-scored and reports refresh again | PASS | R01 20->20 (pending) ->25 (approved); live reports ['EDC-2027-03-31-v3', 'NRF-2027-03-31-v3'] |
-| T27 | Change | CE-02: Tranche 2 at risk, R06/R17 re-score proposed, downstream milestones identified | PASS | rescore=['R06', 'R17', 'R21'] ms=['MS08', 'MS10', 'MS11', 'MS12'] downstream=['MS14', 'MS15', 'MS16', 'MS18'] |
+| T26 | Change | Nothing changes until HC6; after approval the risk is re-scored and reports refresh again | PASS | R01 20->20 (pending) ->25 (approved, proposed 25); live reports ['EDC-2027-03-31-v3', 'NRF-2027-03-31-v3'] |
+| T27 | Change | CE-02: re-scores proposed for existing risks, affected and downstream milestones identified | PASS | rescore=['R06', 'R17', 'R21'] ms=['MS08', 'MS10', 'MS11', 'MS12'] downstream=['MS14', 'MS15', 'MS16', 'MS18'] |
 | T28 | Change | A Critic STOPs a post-event draft that ignores the change event | PASS | critic_stopped |
 | T29 | Governance | Bias & fairness check flags senior under-representation and English-only loss; HC7 pending | PASS | raw=['Childcare', 'Communication & trust', 'Lifts & barrier-free access', 'Active ageing / seniors'] reweighted=['Childcare', 'Active ageing / seniors', 'Lifts  |
 | T30 | Governance | Audit trail: every PM write has an audit row; every approval names a human | PASS | pm write rows=92, issues=92, unnamed approvals=0 |
 | T31 | Integration | Module hand-offs run without human copy-paste (logged) | PASS | hand-offs [('change', 'reporting'), ('planning', 'risk'), ('reporting', 'critic'), ('risk', 'reporting')] |
 | T32 | Invention rate | Share of sampled output claims not traceable to brief / pack / sponsor answers | PASS | 0/75 untraceable (0.0%) |
 | T33 | Re-run stability | Two full runs on the same inputs give identical plan, register, gaps and report content | PASS | gaps hash equal=True; new report versions on identical re-run=0 |
+| T34 | Memory | Frequency question answered with citation: how often the EDC meets (both sources) | PASS | 'How often does the EDC meet?' -> cites ['EDC-1.6', 'EDC-2.3'] |

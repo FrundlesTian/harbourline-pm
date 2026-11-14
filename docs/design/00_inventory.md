@@ -3,6 +3,7 @@
 MA6094 Capstone · Harbourline Community Hub Refurbishment · Deliverable 1 (Design Document)
 Prepared from repository state at commit `8044577` (branch `main`), 8 Nov 2026.
 Status: **Phase 1 complete. Superseded on 8 Nov 2026 by `design_document.md` (Appendix C holds the updated coverage table).**
+This file is a historical snapshot and is not updated; for the current state see `design_document.md` and `claims_trace.md`.
 
 > **Team decisions, 8 Nov 2026**
 > 1. **Stack:** follow the repository, as corrected in §0.2.

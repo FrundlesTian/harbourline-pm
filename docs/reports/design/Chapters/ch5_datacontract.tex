@@ -1,0 +1,79 @@
+\chapter{Data contract with the PM tool}
+\label{ch:datacontract}
+
+Table~\ref{tab:contract} maps each plan element to the PM field it is written to; line references are to \code{app/pmtool.py}.
+
+\begin{table}[htbp]
+\centering\footnotesize
+\caption{Mapping of plan elements to PM fields, with rules in app/pmtool.py}
+\label{tab:contract}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{4.4cm}L}
+\toprule
+\textbf{Plan element} & \textbf{PM field} & \textbf{Rule in \texttt{app/pmtool.py}} \\
+\midrule
+WBS L1 / L2 / L3 & Issue type Epic / Task / Subtask & \code{:41-50}; Jira types resolved by hierarchy level, so localised type names work, \code{:245-266} \\
+Milestone & Task, summary \texttt{[MSnn] Milestone: \textless{}name\textgreater{}} & \code{:52-61} \\
+WBS parent & \code{parent} = parent's issue key & via ext-key map, parents written first, \code{:539-556} \\
+Dependency & ``Blocks'' issue link & idempotent; direction learned once and corrected, \code{:294-317} \\
+Labels & \code{ai-generated}, ext key, \code{wbs} or \code{milestone} & create refused without \code{ai-generated}, \code{:356-358} \\
+Due date & \code{duedate} only for a full ISO date & otherwise the description says the date is NOT FOUND, \code{:53}, \code{57} \\
+Description & WBS dictionary or milestone note + source citations & \code{:48}, \code{57} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{External key and idempotency}
+
+Each item has a stable label key such as \code{ext-HCH-WBS-1-2-3}, built in \code{:37-38}. Sync has three steps. First, each item is looked up by ext key with one search plus a bulk read of keys written before, which covers Jira's index lag, see \code{:452-479}. Second, a SHA-256 content hash is compared with \code{pm_sync_map} and the board copy, see \code{:65-67} and \code{:515-518}. Third, the item is created, updated or left unchanged, see \code{:543-554}. \code{change-*} labels from approved HC6 actions survive re-syncs, see \code{:510-512}. In eval T22 the second sync created 0, updated 0 and left 92 unchanged.
+
+\section{Approval bound to the diff}
+
+\code{preview} hashes the list of ext key, action and hash into \code{preview_id} at \code{:501}. HC3 approves that ID and \code{apply} refuses any other at \code{:528}. \code{apply} recomputes the actions itself but does not re-check that they still produce the approved ID; this is limitation L2 in Section~\ref{sec:limitations}. Figure~\ref{fig:pmwrite} shows the complete write path with its refusals.
+
+\begin{figure}[htbp]
+  \centering
+  \resizebox{0.97\textwidth}{!}{\input{fig/pmwrite}}
+  \caption[PM write path: HC2, preview, HC3, apply and read-back]{PM write path. HC2 must approve the current plan hash before \texttt{preview} runs; HC3 approves one \texttt{preview\_id}; \texttt{apply} writes through \texttt{Guarded} and \texttt{readback} reconciles the board. Refusals are shown on the left; the code is in \texttt{app/pmtool.py:482-592}.}
+  \label{fig:pmwrite}
+\end{figure}
+
+\section{Read-back reconciliation}
+
+After every apply, \code{readback} reports missing, mismatched, duplicate, unlabelled and human-Done items, and sets \code{verified} only if there are no missing, mismatched or duplicate items, see \code{:568-592}.
+
+\section{Allowed and refused operations}
+
+\begin{itemize}[leftmargin=*,itemsep=2pt]
+  \item \textbf{Allowed:} create; update of summary, description, labels, due date and parent; comment; link; and reads.
+  \item \textbf{Refused and logged:} delete, close, transition, and any update touching status or resolution, see \code{:363-390}.
+  \item \textbf{One exception:} the agent deletes an \emph{issue link} it has just created in the wrong direction, and logs it, see \code{:308-312}. It never deletes an issue.
+\end{itemize}
+
+\section{Reset demo: maintenance, not an agent operation}
+\label{sec:reset}
+
+The start screen has a \textbf{Reset demo} button that is reachable before choosing an identity, see \code{server.py:408-415}. It is separate from the agents' \code{Guarded} adapter. Figure~\ref{fig:reset} summarises the four steps:
+
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item \textbf{Preview} through \texttt{GET /api/reset/preview} in \code{server.py:49-64}. It lists every issue in the configured Jira project, found by one project search plus the keys in \code{pm_sync_map}, so items missing from Jira's search index are included, see \code{app/pmtool.py:401-410}. The snapshot of site, project, Jira count, mock count and confirmation text is hashed into a reset \code{preview_id}.
+  \item \textbf{Confirm} through \texttt{POST /api/reset/restore} in \code{server.py:67-81}. The user must type the Jira project key, or \code{RESET} when only the mock board is configured. The server refuses a missing or wrong confirmation with 400, a second reset already running with 409 and \code{RESET_LOCK}, and a snapshot whose \code{preview_id} has changed since the preview with 409.
+  \item \textbf{Delete}, implemented in \code{app/pmtool.py:413-448}. The issue list is fetched again and must match the preview exactly. Issues are deleted deepest-first with \code{deleteSubtasks=false}, so nothing is removed by cascade, and each deletion is written to \code{audit_log}. The first Jira error stops the reset; the local data is then \textbf{not} reset and the error reports how many issues were already deleted.
+  \item \textbf{Restore}, implemented in \code{app/pipeline.py:83-100}. Only after all deletions succeed is every demo table cleared, including approvals, decisions, sessions and custom accounts; the four default accounts are seeded again; and a baseline run without the LLM rebuilds the outputs. \code{audit_log} is kept.
+\end{enumerate}
+
+\begin{figure}[htbp]
+  \centering
+  \resizebox{0.9\textwidth}{!}{\input{fig/reset}}
+  \caption[Reset demo flow with its refusals]{Reset demo flow, a human maintenance action outside the agents' \texttt{Guarded} adapter. Refusals and the stop rule are shown on the right; \texttt{audit\_log} is never cleared.}
+  \label{fig:reset}
+\end{figure}
+
+This deletes \textbf{every} issue in the project, including issues the system did not create, so it must only be pointed at the team's sandbox project; this is limitation L8 in Section~\ref{sec:limitations}. An offline check on the mock board on 14 Nov 2026 confirmed the refusals and that the audit log survives, see \code{docs/governance/evidence/reset_check.json}. The Overview page keeps the older, admin-only \textbf{Reset demo outputs} in \code{app/pipeline.py:72-80}, which clears outputs but keeps approvals and decisions.
+
+\section{Jira endpoints, the Jira run and read before write}
+
+\textbf{Jira endpoints.} The agent uses ten Jira Cloud REST v3 endpoints for search, bulk fetch, issue-type metadata, issue create and update, comment, issue links, the current user, project and link types; they are implemented in \code{:209-341}. Reset demo also deletes issues through the Jira API; the agent never does. Rate limits 429 and 503 are retried using Retry-After at \code{:162-163}, a standard stability pattern for calls to an external service \parencite{nygard2018}.
+
+\textbf{Jira run.} The team's own Jira Cloud site on the Free plan, with project key \code{SCRUM}, is the sandbox; the API token is Tian Yujia's. According to the team, it ran HC2/HC3-approved writes and read-backs from its demo machine, where the audit and approvals exports are kept. A read-only snapshot of the project taken from this repository on 14 Nov 2026, \code{docs/governance/evidence/jira_snapshot_2026-11-14.json}, shows the result of the latest sync: 92 issues \code{SCRUM-283}--\code{SCRUM-374}, created 16:51--16:52 SGT, all labelled \code{ai-generated}, and 92 distinct external keys with no duplicates. There are 6 Epics, 37 Tasks and 49 Subtasks on a site with Chinese type names 长篇故事 / 任务 / 子任务, 68 items with a parent, 18 milestones and 18 ``Blocks'' links, all in the initial status. This matches the baseline plan item for item. Keys start at 283, so earlier syncs had already been made and cleared with Reset demo.
+
+\textbf{Read before write.} The read path always runs before a write, by construction: \code{apply} refuses anything but an HC3-approved \code{preview_id}, see \code{app/pmtool.py:528-531}, and \code{preview} reads the board first with one JQL search plus a bulk read, see \code{app/pmtool.py:482-501} and \code{:452-479}. \code{scripts/jira_check.py} and the PM tool page's \textbf{Test Jira connection}, which calls \code{health} in \code{app/pmtool.py:599-612}, are read-only checks of account, project, issue types and link types.

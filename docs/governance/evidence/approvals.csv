@@ -1,11 +1,11 @@
 id,ts,checkpoint,checkpoint_name,item_type,item_id,approver,role,decision,comment
-1,2026-11-08T19:21:14+08:00,HC1,Scope statement & Sponsor Questions sign-off,gaps,072aec9495dc,Project Manager,Team PM lead,approved,Demonstration run (scripted) - scope and Sponsor Questions reviewed
-2,2026-11-08T19:21:14+08:00,HC2,"WBS, dictionary & milestone plan baseline approval",plan,2656fb7c1a17,Project Manager,Team PM lead,approved,"Demonstration run (scripted) - WBS, dictionary and milestones baselined"
-3,2026-11-08T19:21:14+08:00,HC3,PM tool write confirmation (diff preview),sync_preview,d252c479f4b9,Project Manager,Tool integration owner,approved,Demonstration run (scripted) - sync preview {'create': 92}
-4,2026-11-08T19:21:14+08:00,HC3,PM tool write confirmation (diff preview),sync_preview,c9ad4f3eb54a,Project Manager,Tool integration owner,approved,Demonstration run (scripted) - re-sync to show idempotency
-5,2026-11-08T19:21:15+08:00,HC4,Risk register & what-if publication,risk_register,abb8ad434b95,Group Leader,Risk owner (team),approved,Demonstration run (scripted) - risk register and what-ifs reviewed
-6,2026-11-08T19:21:15+08:00,HC5,Report release after Critic pass,report,EDC-2027-03-31-v1,Group Leader,Reporting owner (team),approved,Demonstration run (scripted) - EDC update released after Critic PASS
-7,2026-11-08T19:21:15+08:00,HC6,Change-impact actions approval,action,CE-01-A01,Project Manager,Team PM lead,approved,Demonstration run (scripted) - re-score accepted
-8,2026-11-08T19:21:15+08:00,HC6,Change-impact actions approval,action,CE-01-A04,Project Manager,Team PM lead,approved,Demonstration run (scripted) - comment + label the affected PM item
-9,2026-11-08T19:21:15+08:00,HC6,Change-impact actions approval,action,CE-01-A14,Project Manager,Team PM lead,rejected,Demonstration run (scripted) - wording to be agreed with the sponsor first
-10,2026-11-08T19:21:15+08:00,HC7,Bias & fairness sign-off on consultation summary,bias_check,BIAS-1,Supervisor,Governance lead,approved,Demonstration run (scripted) - findings B1-B6 accepted; actions to Community Engagement
+1,2026-11-14T18:00:11+08:00,HC1,Scope statement & Sponsor Questions sign-off,gaps,072aec9495dc,Project Manager,Team PM lead,approved,Demonstration run (scripted) - scope and Sponsor Questions reviewed
+2,2026-11-14T18:00:11+08:00,HC2,"WBS, dictionary & milestone plan baseline approval",plan,2656fb7c1a17,Project Manager,Team PM lead,approved,"Demonstration run (scripted) - WBS, dictionary and milestones baselined"
+3,2026-11-14T18:00:11+08:00,HC3,PM tool write confirmation (diff preview),sync_preview,d252c479f4b9,Project Manager,Tool integration owner,approved,Demonstration run (scripted) - sync preview {'create': 92}
+4,2026-11-14T18:00:11+08:00,HC3,PM tool write confirmation (diff preview),sync_preview,c9ad4f3eb54a,Project Manager,Tool integration owner,approved,Demonstration run (scripted) - re-sync to show idempotency
+5,2026-11-14T18:00:11+08:00,HC4,Risk register & what-if publication,risk_register,abb8ad434b95,Group Leader,Risk owner (team),approved,Demonstration run (scripted) - risk register and what-ifs reviewed
+6,2026-11-14T18:00:11+08:00,HC5,Report release after Critic pass,report,EDC-2027-03-31-v1,Group Leader,Reporting owner (team),approved,Demonstration run (scripted) - EDC update released after Critic PASS
+7,2026-11-14T18:00:11+08:00,HC6,Change-impact actions approval,action,CE-01-A01,Project Manager,Team PM lead,approved,Demonstration run (scripted) - re-score accepted
+8,2026-11-14T18:00:11+08:00,HC6,Change-impact actions approval,action,CE-01-A04,Project Manager,Team PM lead,approved,Demonstration run (scripted) - comment + label the affected PM item
+9,2026-11-14T18:00:11+08:00,HC6,Change-impact actions approval,action,CE-01-A14,Project Manager,Team PM lead,rejected,Demonstration run (scripted) - wording to be agreed with the sponsor first
+10,2026-11-14T18:00:11+08:00,HC7,Bias & fairness sign-off on consultation summary,bias_check,BIAS-1,Supervisor,Governance lead,approved,Demonstration run (scripted) - findings B1-B6 accepted; actions to Community Engagement

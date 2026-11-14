@@ -1,0 +1,52 @@
+% Figure: audit rows by agent and by outcome (source: agent_writes.csv, audit_log.csv)
+\begin{figure}[htbp]
+\centering
+\begin{minipage}[t]{0.52\textwidth}
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  xbar, width=0.82\linewidth, height=5.4cm,
+  bar width=7pt,
+  xmin=0, xmax=135,
+  symbolic y coords={governance,planning,reporting,risk,change,tooling},
+  ytick=data, y dir=normal,
+  yticklabel style={font=\footnotesize},
+  xticklabel style={font=\footnotesize},
+  xlabel={agent-write rows}, xlabel style={font=\footnotesize},
+  nodes near coords, nodes near coords style={font=\footnotesize, color=pmNavy},
+  axis x line*=bottom, axis y line*=left,
+  enlarge y limits=0.12,
+  title={a. Agent writes by agent, 137 rows}, title style={font=\small},
+]
+\addplot[bar shift=0pt, fill=pmNavy, draw=pmNavy] coordinates {
+  (112,tooling) (11,change) (6,risk) (6,reporting) (1,planning) (1,governance)};
+\end{axis}
+\end{tikzpicture}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.45\textwidth}
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  ybar, width=0.9\linewidth, height=5.4cm,
+  bar width=14pt,
+  ymin=0, ymax=200,
+  symbolic x coords={ok,fallback,blocked,rejected,error},
+  xtick={ok,fallback,blocked,rejected,error},
+  xticklabel style={font=\footnotesize, rotate=35, anchor=north east, inner sep=1pt},
+  yticklabel style={font=\footnotesize},
+  ylabel={audit rows}, ylabel style={font=\footnotesize},
+  nodes near coords, nodes near coords style={font=\footnotesize},
+  axis x line*=bottom, axis y line*=left,
+  enlarge x limits=0.15,
+  title={b. All audit rows by outcome, 188 rows}, title style={font=\small},
+]
+\addplot[bar shift=0pt, fill=pmTeal, draw=pmTeal] coordinates {(ok,174)};
+\addplot[bar shift=0pt, fill=pmGrey, draw=pmGrey] coordinates {(fallback,9)};
+\addplot[bar shift=0pt, fill=pmOrange, draw=pmOrange] coordinates {(blocked,5)};
+\addplot[bar shift=0pt, fill=pmLight, draw=pmGrey] coordinates {(rejected,0) (error,0)};
+\end{axis}
+\end{tikzpicture}
+\end{minipage}
+\caption[Audit rows by agent and by outcome]{Audit rows by agent and by outcome. Panel a: the 137 agent-write rows by agent; tooling covers 92 \texttt{pm create}, 18 \texttt{pm link} and 2 \texttt{pm sync applied}. Panel b: all 188 audit rows by outcome; the 5 \texttt{blocked} rows are audit \#26 and \#148--151, and the 9 \texttt{fallback} rows are baseline outputs made without LLM calls. Source: \texttt{agent\_writes.csv}, \texttt{audit\_log.csv}.}
+\label{fig:auditbars}
+\end{figure}

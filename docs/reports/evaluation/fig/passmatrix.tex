@@ -1,0 +1,29 @@
+% Pass/fail matrix T01-T34 x {Baseline, LLM}, 14 Nov 2026. Sources: eval/results/latest.md,
+% docs/evaluation/evidence/llm_results_2026-11-14.md. All 68 results PASS.
+\begin{tikzpicture}[x=0.395cm, y=0.62cm]
+  \node[anchor=east, font=\small] at (0.3,1.5) {Baseline};
+  \node[anchor=east, font=\small] at (0.3,0.5) {LLM mode};
+  \foreach \i in {1,...,34} {
+    \fill[pmTeal] (\i-0.45,1.08) rectangle (\i+0.45,1.92);
+    \fill[pmTeal] (\i-0.45,0.08) rectangle (\i+0.45,0.92);
+    \node[rotate=90, anchor=east, font=\scriptsize] at (\i,-0.05) {\ifnum\i<10 T0\i\else T\i\fi};
+  }
+  % new case T34
+  \foreach \r in {0,1} {
+    \fill[pmBlue] (34-0.45,\r+0.08) rectangle (34+0.45,\r+0.92);
+  }
+  % rewritten behaviour checks
+  \foreach \i in {3,4,24,26,27,33} {
+    \node[font=\small\bfseries, pmNavy] at (\i,2.35) {\dag};
+  }
+  % groups
+  \draw[decorate, decoration={brace, amplitude=4pt}, pmNavy, thick] (0.5,2.85) -- (3.5,2.85)
+    node[midway, above=4pt, font=\scriptsize, text=pmNavy] {Brief gaps};
+  \draw[decorate, decoration={brace, amplitude=4pt}, pmNavy, thick] (23.5,2.85) -- (28.5,2.85)
+    node[midway, above=4pt, font=\scriptsize, text=pmNavy] {Week 12 change};
+  % legend
+  \fill[pmTeal] (2,-2.3) rectangle (2.8,-1.8); \node[anchor=west, font=\scriptsize] at (2.9,-2.05) {PASS};
+  \fill[pmBlue] (6,-2.3) rectangle (6.8,-1.8); \node[anchor=west, font=\scriptsize] at (6.9,-2.05) {PASS, new case T34};
+  \node[font=\small\bfseries, pmNavy] at (14.3,-2.05) {\dag}; \node[anchor=west, font=\scriptsize] at (14.6,-2.05) {rewritten as behaviour check};
+  \node[anchor=west, font=\scriptsize] at (24.5,-2.05) {Baseline 34/34, LLM mode 34/34};
+\end{tikzpicture}

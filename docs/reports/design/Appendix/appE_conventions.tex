@@ -1,0 +1,44 @@
+\chapter{Source-ID and WBS-code conventions}
+\label{app:conventions}
+
+Table~\ref{tab:ids} lists the identifier patterns used throughout the system and this document.
+
+{\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{4.3cm}>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{3.9cm}@{}}
+\caption{Source-ID and code conventions}\label{tab:ids}\\
+\toprule
+\textbf{ID pattern} & \textbf{Meaning} & \textbf{Example} & \textbf{Defined in} \\
+\midrule
+\endfirsthead
+\multicolumn{4}{@{}l}{\small\itshape Table~\thetable\ continued}\\
+\toprule
+\textbf{ID pattern} & \textbf{Meaning} & \textbf{Example} & \textbf{Defined in} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\code{BRIEF-p<page>-<para>} & Brief paragraph & \code{BRIEF-p3-5} & \code{app/sources.py:53-77} \\
+\code{SA-Q<n>} & Sponsor Answers Round 1 & \code{SA-Q3} & \code{app/sources.py:80-102} \\
+\code{EDC-<item>} & EDC minutes item & \code{EDC-2.3} & \code{app/sources.py:105-133} \\
+\code{PR1-/PR2-/PR3-<}\S\code{>} & Contractor report Jan/Feb/Mar 2027 & \code{PR3-3} & \code{app/sources.py:136-151} \\
+\code{DEL-D<nn>} & Deliverables schedule row & \code{DEL-D22} & \code{app/sources.py:194-210} \\
+\code{RISK-R<nn>} & Seed risk register row & \code{RISK-R08} & as above \\
+\code{RC-RC<nnn>} & Consultation response & \code{RC-RC002} & as above \\
+\code{LL-L<nn>} & Seabreeze lesson & \code{LL-L04} & \code{app/sources.py:154-165} \\
+\code{NRF-<clause>} / \code{NRF-T<n>} & Grant schedule clause / tranche & \code{NRF-4.2}, \code{NRF-T2} & \code{app/sources.py:168-191} \\
+\code{F<nn>} & Verified fact with exact quote & \code{F24} & \code{app/facts_catalog.py} \\
+\code{CE-<nn>} / \code{DL-<nnn>} & Change event / human decision & \code{CE-01}, \code{DL-001} & \code{app/change.py:236-245}, \code{app/memory.py:142-149} \\
+\code{CF<nn>} & Conflict register & \code{CF12} & \code{app/planning.py:219-281} \\
+\code{SC<nn>} / \code{OS<nn>} & Scope line in / out of scope & \code{SC03} & \code{app/planning.py:330-331} \\
+\code{GQ<nn>} / \code{A-<nn>} & Sponsor Question / its assumption & \code{GQ09} $\rightarrow$ \code{A-09} & \code{app/planning.py:513} \\
+\code{MS<nn>} & Milestone; \code{M+n} = months from site possession & \code{MS07}, \code{M+22} & \code{app/planning.py:440} \\
+\code{R<nn>} & Live risk; R01--R14 keep seed IDs, R15+ are new & \code{R22} & \code{app/risk.py:185} \\
+\code{W<n>} & What-if scenario & \code{W1} & \code{app/risk.py:301-357} \\
+\code{HC<n>} & Human checkpoint & \code{HC3} & \code{app/audit.py:16-31} \\
+\code{B<n>} & Bias finding & \code{B3} & \code{app/governance.py:66-91} \\
+\code{ext-HCH-WBS-<code>} / \code{ext-HCH-MS<nn>} & PM external key, stored as a label & \code{ext-HCH-WBS-1-2-3} & \code{app/pmtool.py:37-38} \\
+\end{longtable}
+}
+
+\textbf{WBS codes:} \code{1} is Level 1, an Epic $\rightarrow$ \code{1.2} is Level 2, a Task $\rightarrow$ \code{1.2.3} is Level 3, a Subtask; there is no Level 4, see \code{app/planning.py:386}. Owners \texttt{UNASSIGNED (<why>)} are kept visible, not filled in.

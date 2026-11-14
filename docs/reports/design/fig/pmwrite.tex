@@ -1,0 +1,44 @@
+% PM write path: HC2 -> preview -> HC3 (bound to preview_id) -> apply -> read-back, with refusals
+\begin{tikzpicture}[
+    font=\footnotesize,
+    >={Stealth[length=2.2mm]},
+    stp/.style={rectangle, rounded corners=2pt, draw=pmNavy, very thick, fill=white,
+                 text width=6.0cm, align=left, inner sep=4pt},
+    hcs/.style={rectangle, draw=hcLine, thick, fill=hcFill, text width=6.0cm, align=left, inner sep=4pt,
+                chamfered rectangle, chamfered rectangle xsep=6pt},
+    refuse/.style={rectangle, rounded corners=2pt, draw=pmOrange, thick, fill=pmOrange!7,
+                   text width=4.1cm, align=left, inner sep=4pt},
+    tool/.style={rectangle, rounded corners=2pt, draw=pmTeal, thick, fill=pmTeal!8,
+                 text width=3.0cm, align=center, inner sep=4pt},
+    flow/.style={->, thick, pmNavy!80!black},
+    no/.style={->, thick, pmOrange},
+    lab/.style={font=\scriptsize, inner sep=1pt},
+]
+\node[hcs]  (hc2) at (0,0) {\textbf{HC2 --- person, project\_manager}\\Approves the plan baseline, bound to \texttt{plan\_hash} of WBS + milestones.};
+\node[stp, below=0.75cm of hc2] (prev) {\textbf{preview} --- Tool Integration Agent\\
+  1.\ Look up each item by external key: one search plus a bulk read of keys written before.\\
+  2.\ Compare a SHA-256 content hash with \texttt{pm\_sync\_map} and the board copy.\\
+  3.\ List create / update / unchanged per item; hash the list of ext key, action and hash into \texttt{preview\_id}.};
+\node[hcs, below=0.75cm of prev] (hc3) {\textbf{HC3 --- person, project\_manager}\\Approves one sync diff, bound to that \texttt{preview\_id}.};
+\node[stp, below=0.75cm of hc3] (apply) {\textbf{apply} --- Tool Integration Agent\\
+  Recomputes the actions; writes parents first; create, update or no-op through \texttt{Guarded}.\\
+  Not re-checked: that the recomputed actions still hash to the approved \texttt{preview\_id}; limitation L2.};
+\node[stp, below=0.75cm of apply] (rb) {\textbf{readback}\\
+  Reports missing, mismatched, duplicate, unlabelled and human-Done items; sets \texttt{verified} only if there are no missing, mismatched or duplicate items.};
+
+\node[refuse, left=0.9cm of prev] (r1) {\textbf{Refused:} no HC2 approval for the current plan hash $\rightarrow$ \texttt{preview} does not run. Any plan change needs re-approval.};
+\node[refuse, left=0.9cm of apply] (r2) {\textbf{Refused:} HC3 not approved for this \texttt{preview\_id}, or rejected, $\rightarrow$ \texttt{apply} refuses; logged \texttt{pm sync refused} as blocked.};
+\node[refuse, below=0.6cm of r2] (r3) {\textbf{Blocked by} \texttt{Guarded}: create without \texttt{ai-generated}; delete, close, transition, or any update touching status or resolution; logged \texttt{BLOCKED}.};
+
+\path ($(apply.east)!0.5!(rb.east)$) ++(2.45,0) node[tool, minimum height=3.2cm] (pm) {\textbf{PM tool}\\Jira Cloud REST v3\\or mock board\\with the same contract};
+
+\draw[flow] (hc2) -- (prev);
+\draw[flow] (prev) -- node[lab, right=2pt] {per-item diff shown to approver} (hc3);
+\draw[flow] (hc3) -- (apply);
+\draw[flow] (apply) -- (rb);
+\draw[no] (prev.west) -- (r1.east);
+\draw[no] ([yshift=3mm]apply.west) -- ([yshift=3mm]apply.west -| r2.east);
+\draw[no] ([yshift=-4mm]apply.west) -- ++(-0.45,0) |- (r3.east);
+\draw[flow] (apply.east) -- node[lab, above] {write} (apply.east -| pm.west);
+\draw[flow] (rb.east -| pm.west) -- node[lab, above] {read} (rb.east);
+\end{tikzpicture}

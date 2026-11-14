@@ -10,6 +10,7 @@ curated baseline used when the LLM is off or the generated register fails valida
 Seed QA and what-if arithmetic are deterministic calculations in both modes."""
 import csv
 import io
+import json
 import re
 from datetime import date, timedelta
 
@@ -125,6 +126,50 @@ def seed_qa():
     return out
 
 
+def _untraced(r):
+    """Critic tracer findings for a generated risk: numbers/dates in description + trigger that
+    the risk's own cited sources do not state."""
+    from . import critic, gen
+    return critic.trace_claim({"text": f"{r.get('description', '')}. Trigger: {r.get('trigger', '')}",
+                               "cites": gen.known(r.get("sources")), "calc": []})
+
+
+def _trace_and_revise(risks, system, llm):
+    """One revision round for risks with untraceable figures (as for change cost lines);
+    risks still untraceable after it are dropped and logged, never stored."""
+    bad = {str(r.get("id")): f for r in risks if (f := _untraced(r))}
+    if not bad:
+        return risks
+    failing = [r for r in risks if str(r.get("id")) in bad]
+    user = ("These risks contain numbers or dates that their cited sources do not state:\n"
+            + "\n".join(f"- {json.dumps(r, ensure_ascii=False)}\n  findings: {bad[str(r.get('id'))]}" for r in failing)
+            + "\n\nSOURCES:\n" + _sources_for(failing)
+            + "\n\nRewrite each risk with the same id so that every number and date in description and trigger is "
+              "stated by one of its cited sources: add the source id that states it, or remove the figure. "
+              'Return {"risks":[...]} with the corrected risks only.')
+    fixed, _ = llm.cached_json(AGENT, system, user, max_tokens=4000)
+    by_id = {str(r.get("id")): r for r in (fixed or {}).get("risks", [])}
+    out = []
+    for r in risks:
+        rid = str(r.get("id"))
+        if rid in bad:
+            r = by_id.get(rid, r)
+            still = _untraced(r)
+            if still:
+                audit.log(AGENT, "reject generated risk (untraceable figure)", "risk", rid, outcome="rejected",
+                          detail={"findings": still})
+                continue
+        out.append(r)
+    return out
+
+
+def _sources_for(risks):
+    from . import gen
+    ids = sorted({s for r in risks for s in gen.known(r.get("sources"))})
+    prefixes = sorted({i.split("-")[0] + "-" for i in ids} | {"BRIEF-p3-", "EDC-", "NRF-", "PR3-"})
+    return gen.block(prefixes, limit_chars=40000)
+
+
 def _llm_register():
     """Generate the register from the seed register + pack evidence + WBS (hand-off).
     Returns (rows in REGISTER tuple form, reason-if-rejected)."""
@@ -150,14 +195,17 @@ def _llm_register():
             "wbs_links lists 1-4 WBS codes the risk threatens; sources are chunk ids; status like 'Open', "
             "'Open - realised in part', 'REOPENED - realised'; origin is one of seed, seed+pack, pack, brief; "
             f"tags only from {gen.TAGS}.\n"
+            "Every number, year and date in description and trigger must appear in one of that risk's cited sources; "
+            "do not compute percentages or totals there, and cite the chunk that states each figure.\n"
             'Return {"risks":[{"id":"R01","category":"","description":"","owner":"","likelihood":3,"impact":4,'
             '"trigger":"","mitigation":"","wbs_links":[],"sources":[],"status":"","origin":"","note":"","tags":[]}]}')
     data, _ = llm.cached_json(AGENT, system, user, max_tokens=7000)
     if not data:
         return None, "no JSON from LLM (risk register)"
     codes = {w["code"] for w in wbs}
+    risks = _trace_and_revise(data.get("risks", []), system, llm)
     out, ids = [], set()
-    for r in data.get("risks", []):
+    for r in risks:
         rid = str(r.get("id", ""))
         try:
             L, I = int(r.get("likelihood")), int(r.get("impact"))

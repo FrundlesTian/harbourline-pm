@@ -1,0 +1,11 @@
+\chapter{Limitations of this evaluation}
+\label{ch:limitations}
+
+\begin{itemize}
+  \item \textbf{All PM-tool cases use the mock board.} The team ran the Jira write and read-back on its own site, project \code{SCRUM}, from its demo machine. A read-only snapshot on 14 November 2026 shows the latest sync: 92 issues, 92 distinct external keys and 18 Blocks links, in \code{docs/governance/evidence/jira_snapshot_2026-11-14.json}. It is evidence of the write, not a harness result.
+  \item \textbf{Gold lists are team-written.} The planted faults and gold gaps were written by the team that built the system, so recall and catch rates measure known failure types, not unknown ones.
+  \item \textbf{The invention rate covers only what the Critic can check.} Its tracer checks numbers, dates and titled persons against cited text. Paraphrased qualitative claims are not checked.
+  \item \textbf{One LLM-mode run is a sample.} Results vary between runs; Chapter~\ref{ch:defects} lists four.
+  \item \textbf{Passwordless identities and Reset demo are outside the harness.} The Reset demo was checked separately on the mock board with \code{scripts/reset_check.py}: a wrong confirmation is refused with 400, a stale preview with 409, and a valid reset restores the baseline and keeps \code{audit_log}. The Jira deletion path is untested.
+  \item \textbf{T30 checks an account, not a person.} Every approval row carries a session account, which is chosen without a password, as designed for the demo.
+\end{itemize}

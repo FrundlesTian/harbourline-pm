@@ -1,0 +1,45 @@
+\chapter{Design trade-offs and limitations}
+\label{ch:tradeoffs}
+
+\section{Design trade-offs}
+
+Table~\ref{tab:tradeoffs} records each major design decision, the alternative that was rejected, and what the decision costs.
+
+{\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.6cm}>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}p{2.8cm}>{\raggedright\arraybackslash}p{3.9cm}>{\raggedright\arraybackslash}p{4.3cm}@{}}
+\caption{Design trade-offs}\label{tab:tradeoffs}\\
+\toprule
+\textbf{\#} & \textbf{Decision} & \textbf{Alternative rejected} & \textbf{Reason} & \textbf{Cost} \\
+\midrule
+\endfirsthead
+\multicolumn{5}{@{}l}{\small\itshape Table~\thetable\ continued}\\
+\toprule
+\textbf{\#} & \textbf{Decision} & \textbf{Alternative rejected} & \textbf{Reason} & \textbf{Cost} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+T1 & LLM generates structured JSON; deterministic validators and Critic decide; curated baseline as fallback & Free-text LLM output reviewed by people only & Every number becomes checkable; failures degrade to a known-good output, not a blank page & Generated plans differ between fresh databases, and only the per-DB cache makes re-runs identical; baseline tables must be maintained \\
+T2 & Plain Python stdlib orchestration & OpenAI Agents SDK, CrewAI or LangChain, permitted by L229--L230 & No dependencies to install; hand-offs and gates are explicit code and logged & No framework tracing or tool-calling; the team writes its own loop, the Critic revision loop \\
+T3 & Mock board with the same contract as Jira & Jira-only development & Evaluation and demos run offline without touching the sandbox & Mock evidence is not Jira evidence, see Chapter~\ref{ch:datacontract} \\
+T4 & Re-scores and change updates wait for HC6 & Auto-apply re-scores & Scores drive the top-five list in external reports; the brief asks for actions drafted for a human & Stale scores persist until someone approves \\
+T5 & BM25 + rule-based sufficiency test for NOT FOUND & Embedding search + LLM judgement & Deterministic, explainable, works with no LLM & Brittle on paraphrase; one case found and fixed, L3 \\
+T6 & Tag-based staleness + milestone dependency walk & Full provenance graph per claim & Simple and auditable; tags are validated against one vocabulary & Coarse: may over-flag; WBS rows are flagged, not regenerated \\
+T7 & Passwordless identity selection and a one-click project reset on the start screen, added 11 Nov 2026 & Password login, commit \code{8044577}; manual clean-up in Jira between demo runs & Faster demonstrations: switching role to show RBAC takes one click, and a demo can be repeated from a clean board & Approvals no longer prove who approved, L7; anyone who can open the page can empty the sandbox project, L8 \\
+\end{longtable}
+}
+
+\section{Known limitations}
+\label{sec:limitations}
+
+\begin{description}[leftmargin=0pt,itemsep=3pt,font=\normalfont\bfseries]
+  \item[L1: Generated Sponsor Questions recall. Kept.] In LLM mode the generated register recalls 77--82\% of the team's 22 gold gaps across runs, and 82\% in the final run; baseline mode recalls 91\%. The team's own target is 80\%; the course instructor later confirmed a lower threshold, which every run meets, according to the team. The evaluation checks that once pinned baseline IDs were rewritten as behaviour checks, and LLM mode now passes 34 of 34; the logs are in \code{docs/evaluation/evidence/}.
+  \item[L2: HC3 diff binding. Accepted by the team.] \code{apply} does not verify that the current diff still hashes to the approved \code{preview_id}, so a plan changed after HC3 but re-approved at HC2 could be written under an older HC3; see \code{app/pmtool.py:526-565}.
+  \item[L3: Memory false NOT FOUND. Fixed 14 Nov 2026.] ``How often does the EDC meet?'' used to return NOT FOUND although \code{EDC-1.6} and \code{EDC-2.3} answer it, because ``often'' was counted as a key term. Frequency questions are now recognised in \code{app/memory.py} and must be answered by a sentence that states a frequency such as weekly or fortnightly. The answer cites both sources; eval T34 checks it.
+  \item[L4: Checkpoints that only record. Accepted by the team.] HC1, HC4 and HC7 are recorded and shown but gate no code path, as Chapter~\ref{ch:checkpoints} shows.
+  \item[L5: Evidence not in the repository.] The Jira approvals and the team's Week 12 run are recorded on the team's demo machine, not in the repository; the repository holds a read-only Jira snapshot. Gemini has not been run; all LLM evidence uses DeepSeek.
+  \item[L6: Partial stretch items.] The three what-ifs are shown as cards, not a comparison table. Re-scoring is triggered by change events, not by arbitrary plan edits.
+  \item[L7: Passwordless demo identities.] Anyone who can reach the app can select an active account, including admin. Role permissions still apply to the selected session, but approvals are not proof of a person's identity. This reopens governance incident I-04, described in Governance Log \S5. Use a protected local demo environment, and restore authentication, which is still in history at commit \code{8044577}, before using this workflow outside the team. \textbf{Team decision of 14 Nov 2026: accepted}, because the team alone controls the demo machine; approvals are attributed to role accounts, not named people.
+  \item[L8: Project-wide reset.] Anyone who can reach the identity screen can preview and confirm deletion of every issue visible to the configured Jira account in the selected project. The operation is irreversible and may partially complete if Jira refuses a later deletion. The local baseline is restored only after all requested Jira deletions succeed. The reset also clears the \code{approvals} and \code{decisions} tables; \code{audit_log} keeps the history. The Jira-side deletion has not been run in this repository's evidence; only the mock-board path was checked. \textbf{Team decision of 14 Nov 2026: accepted}, because \code{SCRUM} is the team's own sandbox and holds only system items; approvals are exported before a reset.
+\end{description}

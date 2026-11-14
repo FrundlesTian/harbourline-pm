@@ -1,0 +1,48 @@
+\chapter{Incidents and the changes we made}
+\label{ch:incidents}
+
+These are problems found during development and review, from the commit history, code comments and the development sessions of 6--8 Nov 2026 and the documentation review of 14 Nov 2026. Each entry records what happened, how it was found, the change made and the evidence, in the manner of a postmortem record \parencite{beyer2016sre}.
+
+Table~\ref{tab:incidents} lists incidents I-01 to I-16, in the order of the governance log. Thirteen are closed. I-13 and I-14 are \stAccepted{} by the team lead on 14 Nov 2026, and I-04 was \stReopened{} on 11 Nov by I-13.
+
+{\scriptsize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.75cm}>{\raggedright\arraybackslash}p{1.0cm}>{\raggedright\arraybackslash}p{3.45cm}>{\raggedright\arraybackslash}p{1.75cm}>{\raggedright\arraybackslash}p{3.15cm}>{\raggedright\arraybackslash}p{2.45cm}>{\raggedright\arraybackslash}p{1.85cm}}
+\caption{Incidents I-01 to I-16 and the changes made}\label{tab:incidents}\\
+\toprule
+\textbf{ID} & \textbf{Date} & \textbf{What happened} & \textbf{How it was found} & \textbf{Change made} & \textbf{Evidence} & \textbf{Status} \\
+\midrule
+\endfirsthead
+\multicolumn{7}{l}{\itshape Table~\ref{tab:incidents} continued} \\
+\toprule
+\textbf{ID} & \textbf{Date} & \textbf{What happened} & \textbf{How it was found} & \textbf{Change made} & \textbf{Evidence} & \textbf{Status} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{7}{r}{\itshape continued on next page} \\
+\endfoot
+\bottomrule
+\endlastfoot
+I-01 & by 8 Nov & Jira's search index lags behind writes, so a quick re-sync could miss items just created and duplicate them & Jira testing & Lookup = one search plus a consistent bulk read of keys already written; sync map per backend & \code{app/pmtool.py:136-140,452-479}; commit \code{8044577} & \stClosed; mock: T22 \\
+I-02 & by 8 Nov & The direction of Jira ``Blocks'' links is easy to get backwards & Jira testing & First link per session is read back; a reversed link the agent just created is deleted, logged \act{pm link direction corrected}, and recreated & \code{app/pmtool.py:294-317}; commit \code{8044577} & \stClosed \\
+I-03 & by 8 Nov & Localised Jira sites name issue types differently, e.g.\ 长篇故事 / 任务 / 子任务 for ``Epic / Task / Sub-task'' in Chinese, so lookup by English name fails & Jira testing & Types resolved by hierarchy level, with env overrides & \code{app/pmtool.py:245-266}; commit \code{8044577}; Jira snapshot: 6 长篇故事 / 37 任务 / 49 子任务 created & \stClosed \\
+I-04 & by 8 Nov & Checkpoints could be approved under a typed-in name & Governance review & Login with four roles; approvals signed by the session account; refused attempts logged & \code{app/auth.py:1-11}, \code{server.py:118-130}; commit \code{8044577} & \stReopened{} 11 Nov by I-13 \\
+I-05 & 8 Nov & Design-document inventory found the plan, register and reports were hand-authored tables; the LLM only added extras & Design review, Phase 1 & Core outputs now LLM-generated, with validators and baseline fallback; origin recorded per agent & commit \code{9356955}; \code{app/gen.py} & \stClosed \\
+I-06 & 8 Nov & Generated report drafts were STOPPED by the Critic, so the system fell back to templates. Causes: a range fact used in a calculation, ``March 2027'' with no source date, a computed date, unattributed ``on programme'' & Audit rows \act{critic STOP on generated … draft} & Drafting rules added; the full text of failing lines is fed back; revision limit raised from 2 to 3 & \code{app/reporting.py:151,176-192,237} & \stClosed; T18 passes in LLM mode \\
+I-07 & 8 Nov & NRF JSON truncated at 4,000 output tokens, an \act{llm json parse} error & Audit log & max\_tokens raised to 7,000 and reports capped at 22 lines & \code{app/reporting.py:173,193} & \stClosed \\
+I-08 & 8 Nov & The LLM proposed a re-score as ``R01 Grant conditions…'', which failed validation. The fallback then applied the \textbf{curated re-score rules to unrelated generated risks}, e.g.\ R22 & Change-event test review & Risk ID parsed by regex; curated rules are never applied to a generated register & \code{app/risk.py:394-419} & \stClosed \\
+I-09 & 8 Nov & Fallback summary was not cached, so an identical re-run spent $\sim$770 tokens & Run accounting, \code{runs} table & Summary uses the response cache & \code{app/reporting.py:141-147} & \stClosed; re-run 0 tokens \\
+I-10 & 8 Nov & DeepSeek is not on the brief's permitted tool list, brief L210--L212 & Design review & Gemini via Google AI Studio is primary and DeepSeek is backup; \code{HCH_LLM_ORDER=gemini} removes the backup & \code{app/config.py:27-59}, \code{app/llm.py:66-115} & \stClosed: the course instructor accepted the use of DeepSeek, team statement of 14 Nov 2026 \\
+I-11 & 8 Nov & LLM-mode evaluation 27/33: gap recall 77\% $<$ 80\% target; five checks pin curated IDs & Evaluation & 14 Nov: ID-pinned checks rewritten as behaviour checks; LLM mode now 34/34; recall 77--82\% kept as limitation L1, above the threshold the instructor confirmed & \code{docs/evaluation/evidence/} & \stClosed \\
+I-16 & 14 Nov & LLM-mode re-run found three real defects: generated risks with figures their sources do not state, an invention rate of 6.9\%; CF12 missing from the CE-01 UNRESOLVED list; no re-score proposed for CE-02. It also found one robustness gap: an uncached extra-gaps call broke re-run stability after a planning fallback & Evaluation, \code{eval_llm_deepseek_2026-11-14_run1_before_fixes.log} & Risk figures traced with one revision round, then dropped; detected conflicts touching the event always listed; one follow-up ask for re-scores; missing Sponsor Question register requested once more; extra-gaps call cached & \code{app/risk.py:129-170}, \code{app/change.py:179-188,285-290}, \code{app/planning.py:296,344-347} & \stClosed; final LLM run 34/34 \\
+I-12 & 8 Nov & Review findings: HC3 approval not re-verified against the current diff; memory returns a false NOT FOUND on EDC cadence; HC1/HC4/HC7 record only & Design review & Documented as limitations L2--L4 & \S8 of \code{docs/design/design_document.md} & \stClosed{} 14 Nov 2026: L3 fixed in \code{app/memory.py}, eval T34; L2 and L4 accepted by the team \\
+I-13 & 11 Nov & To speed up demonstrations, passwords were removed: the start screen lists the active accounts and anyone can pick one, including admin. Approvals are still recorded under the session account, but the account no longer proves who approved & Documentation review, 14 Nov & None yet. Documented as design limitation L7 and trade-off T7. The password code is in history at commit \code{8044577} & \code{app/auth.py:129-148} & \stAccepted{} by the team lead, 14 Nov 2026: the team alone controls the demo machine; approvals are attributed to role accounts \\
+I-14 & 11 Nov & The new start-screen Reset demo deletes \textbf{every} issue in the configured Jira project, including issues the system did not create. It runs without a session, so the audit log records the deletions under the actor \texttt{demo reset} and the restore under \texttt{orchestrator}, not a named person. It also clears the \code{approvals} and \code{decisions} tables & Documentation review and reset check, 14 Nov & Safeguards in code: preview bound to \code{preview_id}, typed project key, lock, deepest-first deletion without cascade, stop on first error before local reset; audit log kept. Documented as limitation L8 & \code{server.py:49-81,408-415}; \code{app/pmtool.py:401-448}; \code{app/pipeline.py:83-100}; \code{reset_check.json} & \stAccepted{} by the team lead, 14 Nov 2026: the configured project \code{SCRUM} is the team's sandbox and holds only system items; export approvals before a reset \\
+I-15 & 14 Nov & The 11 Nov change moved code, so many \texttt{file:line} references in the three documents pointed at the wrong lines & Documentation review & References re-mapped by diff against \code{d4a3649} and spot-checked; documents updated & this update & \stClosed \\
+\end{longtable}
+}
+
+\section{Summary of PM-tool write paths}
+
+No \textbf{agent} wrote to the PM tool outside the HC3-approved path. The only other path that changes the PM tool is the human Reset demo, incident I-14. Every blocked attempt in the demonstration and evaluation runs is in the audit log with outcome \texttt{blocked}.

@@ -1,0 +1,34 @@
+% Figure: Reset demo safeguards (source: governance_log.md section 4, reset_check.json)
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  font=\scriptsize,
+  >={Stealth[length=2mm]},
+  rstep/.style={draw=pmNavy, fill=pmLight, rounded corners=2pt, align=center,
+               text width=2.05cm, minimum height=1.9cm, inner sep=2pt, line width=0.6pt},
+  human/.style={rstep, draw=hcLine, fill=hcFill, line width=0.9pt},
+  stop/.style={draw=pmOrange, dashed, fill=white, rounded corners=2pt, align=center,
+               text width=2.05cm, inner sep=2pt, text=pmOrange!80!black, line width=0.7pt},
+  flow/.style={->, draw=pmNavy, line width=0.7pt},
+  rlink/.style={->, draw=pmOrange, dashed, line width=0.6pt},
+  node distance=0.42cm
+]
+\node[human] (s1) {\textbf{1. Preview}\\counts issues to delete; returns \texttt{preview\_id} and confirmation text};
+\node[human, right=of s1] (s2) {\textbf{2. Typed key}\\project key, or \texttt{RESET} on the mock board};
+\node[rstep, right=of s2] (s3) {\textbf{3. Match}\\\texttt{preview\_id} still fresh; lock: one reset at a time};
+\node[rstep, right=of s3] (s4) {\textbf{4. Jira deletion}\\deepest-first, \texttt{deleteSubtasks}\\\texttt{=false}; one audit row per deletion};
+\node[rstep, right=of s4] (s5) {\textbf{5. Local reset}\\\texttt{approvals}, \texttt{decisions} cleared; \texttt{audit\_log} kept};
+\node[rstep, right=of s5] (s6) {\textbf{6. Restore}\\initial demo restored by \texttt{orchestrator}};
+\foreach \a/\b in {s1/s2,s2/s3,s3/s4,s4/s5,s5/s6} \draw[flow] (\a) -- (\b);
+\node[stop, below=0.75cm of s2] (x2) {\xmark\ wrong confirmation\\$\rightarrow$ \textbf{400}};
+\node[stop, below=0.75cm of s3] (x3) {\xmark\ stale preview\\$\rightarrow$ \textbf{409}};
+\node[stop, below=0.75cm of s4] (x4) {\xmark\ first Jira error: \textbf{stop} before any local data is cleared};
+\draw[rlink] (s2) -- (x2);
+\draw[rlink] (s3) -- (x3);
+\draw[rlink] (s4) -- (x4);
+\node[stop, draw=pmGrey, text=pmGrey!70!black, below=0.75cm of s5, text width=4.6cm, xshift=1.25cm] (note)
+  {Step 4 not yet exercised against Jira: the reset check ran on the mock board with Jira credentials blanked; \texttt{jira\_deleted}: 0};
+\end{tikzpicture}
+\caption[Reset demo safeguards]{Safeguards of the start-screen Reset demo, implemented in \texttt{server.py:49-81}, \texttt{app/pmtool.py:413-448} and \texttt{app/pipeline.py:83-100}. Yellow steps need the person's input; dashed boxes are refusals. The reset check returned 400 for a wrong confirmation, 409 for a stale preview and 200 for a valid reset, and the audit log grew from 140 to 166 rows. Source: \texttt{reset\_check.json}.}
+\label{fig:reset}
+\end{figure}

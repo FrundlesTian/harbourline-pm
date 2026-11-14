@@ -1,8 +1,8 @@
 {
-  "generated": "2026-11-08T19:21:16+08:00",
+  "generated": "2026-11-14T18:01:15+08:00",
   "llm": false,
-  "passed": 33,
-  "total": 33,
+  "passed": 34,
+  "total": 34,
   "measures": {
     "gap_recall": {
       "value": 0.909,
@@ -95,14 +95,14 @@
     "cost_time": {
       "runs": [
         {
-          "seconds": 0.056,
+          "seconds": 0.057,
           "tokens_in": 0,
           "tokens_out": 0,
           "cost_usd": 0.0,
           "llm": false
         },
         {
-          "seconds": 0.054,
+          "seconds": 0.053,
           "tokens_in": 0,
           "tokens_out": 0,
           "cost_usd": 0.0,
@@ -112,7 +112,7 @@
       "mean_seconds": 0.055,
       "mean_tokens": 0,
       "mean_cost_usd": 0.0,
-      "eval_wall_seconds": 0.82
+      "eval_wall_seconds": 0.88
     }
   },
   "cases": [
@@ -296,12 +296,12 @@
       "category": "Change",
       "description": "Nothing changes until HC6; after approval the risk is re-scored and reports refresh again",
       "pass": true,
-      "detail": "R01 20->20 (pending) ->25 (approved); live reports ['EDC-2027-03-31-v3', 'NRF-2027-03-31-v3']"
+      "detail": "R01 20->20 (pending) ->25 (approved, proposed 25); live reports ['EDC-2027-03-31-v3', 'NRF-2027-03-31-v3']"
     },
     {
       "id": "T27",
       "category": "Change",
-      "description": "CE-02: Tranche 2 at risk, R06/R17 re-score proposed, downstream milestones identified",
+      "description": "CE-02: re-scores proposed for existing risks, affected and downstream milestones identified",
       "pass": true,
       "detail": "rescore=['R06', 'R17', 'R21'] ms=['MS08', 'MS10', 'MS11', 'MS12'] downstream=['MS14', 'MS15', 'MS16', 'MS18']"
     },
@@ -346,6 +346,13 @@
       "description": "Two full runs on the same inputs give identical plan, register, gaps and report content",
       "pass": true,
       "detail": "gaps hash equal=True; new report versions on identical re-run=0"
+    },
+    {
+      "id": "T34",
+      "category": "Memory",
+      "description": "Frequency question answered with citation: how often the EDC meets (both sources)",
+      "pass": true,
+      "detail": "'How often does the EDC meet?' -> cites ['EDC-1.6', 'EDC-2.3']"
     }
   ]
 }

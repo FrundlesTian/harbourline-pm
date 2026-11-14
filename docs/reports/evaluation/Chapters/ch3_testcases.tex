@@ -1,0 +1,69 @@
+\chapter{Test cases}
+\label{ch:testcases}
+
+Table~\ref{tab:cases} lists all 34 test cases. ``Input'' is what the harness does; ``Pass if'' is the assertion in \code{eval/run_eval.py}. Cases marked \dag\ were rewritten on 14 November 2026 to test behaviour instead of baseline IDs; T34 is new. Figure~\ref{fig:passmatrix} summarises the outcomes of both modes at a glance. The full per-case detail recorded by the harness is reproduced in Appendix~\ref{app:baseline} for the baseline run and in Appendix~\ref{app:llm} for the LLM-mode run.
+
+\begin{figure}[htbp]
+\centering
+\input{fig/passmatrix}
+\caption{Pass and fail matrix of T01--T34 in both modes, 14 November 2026. All 68 results pass. Daggers mark the six cases rewritten as behaviour checks; T34 is the new memory case}
+\label{fig:passmatrix}
+\end{figure}
+
+{\footnotesize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.85cm}>{\raggedright\arraybackslash}p{1.9cm}>{\raggedright\arraybackslash}p{3.4cm}>{\raggedright\arraybackslash}p{4.0cm}>{\raggedright\arraybackslash}p{2.1cm}>{\raggedright\arraybackslash}p{2.2cm}@{}}
+\caption{The 34 test cases with their results in baseline mode and LLM mode}\label{tab:cases}\\
+\toprule
+\textbf{ID} & \textbf{Area} & \textbf{Input} & \textbf{Pass if} & \textbf{Baseline} & \textbf{LLM} \\
+\midrule
+\endfirsthead
+\multicolumn{6}{@{}l}{\small\itshape Table~\thetable\ continued} \\
+\toprule
+\textbf{ID} & \textbf{Area} & \textbf{Input} & \textbf{Pass if} & \textbf{Baseline} & \textbf{LLM} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{6}{r@{}}{\small\itshape continued on next page} \\
+\endfoot
+\bottomrule
+\endlastfoot
+T01 & \textbf{Brief gaps} & Full run; match 22 gold gaps against the register text & recall $\geq 0.8$ & PASS 20/22 & PASS 18/22 \\
+T02 & Planning: conflicts & Full run & CF01, CF02, CF03, CF05, CF06 present, each citing $\geq 2$ sources & PASS, CF01--CF12 & PASS, CF01--CF12 \\
+T03\dag & Planning: traceability & Full run & No kept WBS element without an in-scope line; at least one untraceable candidate flagged and not kept & PASS, 4 flagged & PASS, 3 flagged \\
+T04\dag & Planning: WBS & Full run & $\geq 40$ Level 3 elements with dictionary; every missing owner shown as UNASSIGNED with its reason & PASS, 49 L3 & PASS, 61 L3 \\
+T05 & Planning: milestones & Full run & No dependency issues; undated milestones are marked NOT FOUND or relative, never given an invented date & PASS, 7 undated & PASS, 14 undated \\
+T06 & Memory: citation & ``What is the approved budget?'' & Cites BRIEF-p3-5 or EDC-1.2 & PASS & PASS \\
+T07 & Memory: citation & ``What is the maximum grant?'' & Cites NRF-1.2 & PASS & PASS \\
+T08 & Memory: citation & ``How much is the asbestos removal estimate?'' & Cites EDC-5.1 or PR3-3 & PASS & PASS \\
+T09 & Memory: citation & ``Who appoints the active ageing centre operator?'' & Cites SA-Q2 & PASS & PASS \\
+T10 & Memory: NOT FOUND & ``What is the energy performance target?'' & NOT FOUND & PASS & PASS \\
+T11 & Memory: NOT FOUND & ``How much will the rooftop garden cost?'' & NOT FOUND & PASS & PASS \\
+T12 & Memory: NOT FOUND & ``What is the contractor's insurance policy number?'' & NOT FOUND & PASS & PASS \\
+T13 & Memory: NOT FOUND & ``What is the resident satisfaction target?'' & NOT FOUND & PASS & PASS \\
+T14 & Memory: conflicts & ``When is practical completion?'' & Names conflict CF01 and cites $\geq 2$ sources & PASS & PASS \\
+T15 & Memory: decisions & Record decision DL-001, rebuild the index as a new session, ask about it & Answer cites DL-001 & PASS & PASS \\
+T16 & Risk: register & Full run & Every risk has L$\times$I = score, owner, trigger, WBS link, source; seed QA finds the R06 score error, R08 closed and the duplicate & PASS, 22 risks & PASS, 24 risks \\
+T17 & Risk: what-if W1 & Full run & Headroom left 0.58--0.83; completion forecast 2029-01-28 to 2029-02-11; $\geq 4$ assumptions & PASS & PASS \\
+T18 & Reporting & Full run & EDC and NRF drafts both \code{critic_passed} & PASS & PASS, LLM-written drafts \\
+T19 & Critic & 21 planted faults, Section~\ref{sec:faults} & $\geq 90\%$ stopped & PASS 21/21 & PASS 21/21 \\
+T20 & Governance: HC5 & Release a draft with an invented figure & Release refused & PASS & PASS \\
+T21 & Tool integration & Preview and apply without HC2 or HC3 & No write; refusals returned & PASS & PASS \\
+T22 & Re-run: PM sync & Approve and sync twice & Second sync 0 created, 0 updated; no duplicates; read-back verified & PASS, 92 items & PASS, 111 items \\
+T23 & Governance: guardrail & Agent tries delete, close, Done and a status update & 4 of 4 blocked and logged & PASS & PASS \\
+T24\dag & \textbf{Week 12 change: CE-01} & Inject CE-01, the grant eligibility ruling & W1, at least three risks and a report marked stale; CF12 in UNRESOLVED; $\geq 3$ decisions; pending HC6 actions; every cost line traced & PASS & PASS \\
+T25 & \textbf{Week 12 change: refresh} & After CE-01 & New report versions cite CE-01 and pass the Critic, with no manual re-run & PASS & PASS \\
+T26\dag & \textbf{Week 12 change: HC6} & Approve the first CE-01 re-score action & The risk keeps its score while the action is pending, takes the proposed score after approval, and the refreshed reports pass & PASS, R01 20 $\rightarrow$ 25 & PASS, R01 20 $\rightarrow$ 25 \\
+T27\dag & \textbf{Week 12 change: CE-02} & Inject CE-02, the operator withdrawal & Re-scores proposed for existing risks; affected and downstream milestones found & PASS, R06, R17, R21 & PASS, R06, R15, R26 \\
+T28 & \textbf{Week 12 change: Critic} & Post-event draft that ignores CE-01 & \code{critic_stopped} by rule C5 & PASS & PASS \\
+T29 & Governance: bias & Bias check on 214 consultation responses & 65+ = 25 responses; raw and re-weighted top four differ; English-only loses senior comments; status awaiting HC7 & PASS & PASS \\
+T30 & Governance: audit & After sync & PM write rows $\geq$ issues; no approval without an account & PASS, 92 / 92 & PASS, 111 / 111 \\
+T31 & Integration & Full run and change & Hand-offs planning$\rightarrow$risk, risk$\rightarrow$reporting, reporting$\rightarrow$critic, change$\rightarrow$reporting logged & PASS & PASS \\
+T32 & Invention rate & Sample all checkable claims & $\leq 5\%$ untraceable & PASS 0/75 & PASS 0/92 \\
+T33\dag & Re-run stability & Re-run the full pipeline twice on the same database, in the same mode & Gap register hash unchanged; no new report versions & PASS & PASS \\
+T34 & Memory: frequency & ``How often does the EDC meet?'' & Answer cites EDC-1.6 or EDC-2.3 & PASS & PASS \\
+\end{longtable}
+}
+
+\noindent\textbf{Brief gaps:} T01, with T02 and T03. \textbf{Week 12 change:} T24--T28.

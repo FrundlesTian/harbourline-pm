@@ -1,0 +1,71 @@
+# LLM-mode evaluation run, 2026-11-14 17:56 +08, DeepSeek (HCH_LLM_ORDER=deepseek), mock board, latest code
+PASS T01 System surfaces the brief's open questions unprompted (gold list, keyword match)
+      recall 0.82 (18/22); missed: ['G14 Existing leases/licences during works', 'G19 Who operates the Hub after completion', 'G20 Is ~100 childcare places a fixed requirement given demand', 'G21 Permitted working hours / noise limits while the Hub is open']
+PASS T02 Contradictions in the brief are detected and cite all sources
+      conflicts ['CF01', 'CF02', 'CF03', 'CF04', 'CF05', 'CF06', 'CF07', 'CF08', 'CF09', 'CF10', 'CF11', 'CF12']
+PASS T03 Every kept WBS element traces to a scope line; untraceable candidates are flagged, not kept
+      untraced kept=[]; flagged=['Tendering the design-and-build contract', 'Fundraising work package', 'Grant funding request in monthly report']
+PASS T04 WBS reaches Level 3 with dictionary and owner; unassigned owners are visible
+      L3=61 unassigned=['3.3.2']
+PASS T05 Milestone dependencies are valid; undated milestones say TBD/NOT FOUND rather than inventing
+      dependency issues=[]; undated=['MS06', 'MS07', 'MS08', 'MS09', 'MS10', 'MS11', 'MS12', 'MS14', 'MS15', 'MS16', 'MS17', 'MS19', 'MS20', 'MS21']
+PASS T06 Answers with document+line citation: approved budget
+      'What is the approved budget?' -> cites ['BRIEF-p3-5', 'EDC-1.2']
+PASS T07 Answers with citation: maximum grant
+      'What is the maximum grant?' -> cites ['NRF-1.2', 'NRF-1.1', 'NRF-1.4']
+PASS T08 Answers with citation: asbestos removal estimate
+      'How much is the asbestos removal estimate?' -> cites ['EDC-5.1', 'PR3-3', 'PR3-4']
+PASS T09 Answers with citation: who appoints the AAC operator
+      'Who appoints the active ageing centre operator?' -> cites ['SA-Q2']
+PASS T10 NOT FOUND: energy performance target
+      'What is the energy performance target?' -> NOT FOUND (LLM found no support in retrieved sources)
+PASS T11 NOT FOUND: cost of the rooftop garden
+      'How much will the rooftop garden cost?' -> NOT FOUND (LLM found no support in retrieved sources)
+PASS T12 NOT FOUND: contractor insurance policy number
+      "What is the contractor's insurance policy number?" -> NOT FOUND (LLM found no support in retrieved sources)
+PASS T13 NOT FOUND: resident satisfaction target
+      'What is the resident satisfaction target?' -> NOT FOUND (LLM found no support in retrieved sources)
+PASS T14 Conflicting sources are named, not silently resolved (practical completion)
+      cites ['EDC-4.1', 'PR3-footer', 'PR2-footer', 'PR1-footer', 'DEL-D22', 'NRF-4.2'], conflicts ['CF01']
+PASS T15 A human decision is carried forward into a later session
+      cites ['DL-001', 'EDC-6.3']
+PASS T16 Register: every risk scored, owned, triggered, linked to WBS and sourced; seed QA finds known defects
+      24 risks, defects=[]; seed QA ok=True
+PASS T17 What-if W1 computes cost/schedule impact with stated assumptions
+      result={'cost_SGD_M': [0.35, 0.6], 'council_exposure_SGD_M': [0.14, 0.6], 'delay_weeks': [4, 6], 'headroom_left_SGD_M': [0.58, 0.83], 'needs_NRF_4.2_approval': True, 'pc_forecast': ['2029-01-28', '2029-02-11']}
+PASS T18 Both reports from the same fact store pass the Critic when clean
+      [('EDC-2027-03-31-v1', 'critic_passed'), ('NRF-2027-03-31-v1', 'critic_passed')]
+PASS T19 Planted faults are stopped by the Critic
+      21/21: 
+PASS T20 A Critic-stopped report cannot be released (HC5 refuses)
+      Report status is critic_stopped: only Critic-passed drafts can be released
+PASS T21 No PM write without HC2 + HC3; preview is read-only
+      preview=HC2 (plan baseline) not approved yet, apply={'ok': False, 'reason': 'HC3 approval for this preview is missing'}
+PASS T22 Second sync with the same plan updates nothing and creates no duplicates
+      first={'created': 111, 'updated': 0, 'unchanged': 0} second={'created': 0, 'updated': 0, 'unchanged': 111} readback verified=True
+PASS T23 Agents cannot delete, close or move to Done; attempts are logged as BLOCKED
+      blocked 4/4, audit rows 6
+PASS T24 CE-01: stale plan/register/reports detected, cost/time cited, CF12 conflict and decisions raised, actions pending
+      stale=[('milestone', 'MS05'), ('milestone', 'MS07'), ('milestone', 'MS13'), ('milestone', 'MS18'), ('milestone', 'MS21'), ('report', 'EDC-2027-03-31-v1'), ('report', 'NRF-2027-03-31-v1'), ('risk', 'R01'), ('risk', 'R08'), ('risk', 'R16'), ('risk', 'R17'), ('risk', 'R21'), ('whatif', 'W1')] cf12=True decisions=5 pending=16 traced=True
+PASS T25 Stale reports refresh automatically (new version cites the event and passes the Critic)
+      [('EDC-2027-03-31-v2', 'critic_passed'), ('NRF-2027-03-31-v2', 'critic_passed')]
+PASS T26 Nothing changes until HC6; after approval the risk is re-scored and reports refresh again
+      R01 20->20 (pending) ->25 (approved, proposed 25); live reports ['EDC-2027-03-31-v3', 'NRF-2027-03-31-v3']
+PASS T27 CE-02: re-scores proposed for existing risks, affected and downstream milestones identified
+      rescore=['R06', 'R15', 'R26'] ms=['MS04', 'MS05', 'MS12', 'MS13', 'MS14', 'MS15', 'MS16', 'MS18', 'MS21'] downstream=['MS17', 'MS19', 'MS20']
+PASS T28 A Critic STOPs a post-event draft that ignores the change event
+      critic_stopped
+PASS T29 Bias & fairness check flags senior under-representation and English-only loss; HC7 pending
+      raw=['Childcare', 'Communication & trust', 'Lifts & barrier-free access', 'Active ageing / seniors'] reweighted=['Childcare', 'Active ageing / seniors', 'Lifts & barrier-free access', 'Communication & trust'] status=awaiting HC7
+PASS T30 Audit trail: every PM write has an audit row; every approval names a human
+      pm write rows=111, issues=111, unnamed approvals=0
+PASS T31 Module hand-offs run without human copy-paste (logged)
+      hand-offs [('change', 'reporting'), ('planning', 'risk'), ('reporting', 'critic'), ('risk', 'reporting')]
+PASS T32 Share of sampled output claims not traceable to brief / pack / sponsor answers
+      0/92 untraceable (0.0%)
+PASS T33 Two full runs on the same inputs give identical plan, register, gaps and report content
+      gaps hash equal=True; new report versions on identical re-run=0
+PASS T34 Frequency question answered with citation: how often the EDC meets (both sources)
+      'How often does the EDC meet?' -> cites ['EDC-1.6', 'EDC-2.3']
+
+34/34 passed. Results: eval/results/latest.md

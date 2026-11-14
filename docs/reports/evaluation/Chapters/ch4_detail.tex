@@ -1,0 +1,106 @@
+\chapter{Detail}
+\label{ch:detail}
+
+\section{Brief gaps: gold list and recall}
+\label{sec:gaps}
+
+Table~\ref{tab:gaps} shows, for each of the 22 gold gaps, whether it was surfaced in each mode, with \cmark\ for surfaced and \xmark\ for missed; Figure~\ref{fig:gaps} shows the same coverage graphically.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\caption{Gold brief gaps G01--G22 and whether each mode surfaced them}
+\label{tab:gaps}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}X cc>{\raggedright\arraybackslash}X cc@{}}
+\toprule
+\textbf{Gold gap} & \textbf{Baseline} & \textbf{LLM} & \textbf{Gold gap} & \textbf{Baseline} & \textbf{LLM} \\
+\midrule
+G01 Start date / what 22 months covers & \cmark & \cmark & G12 Energy performance target & \cmark & \cmark \\
+G02 22 months vs ``fully open by Q4 2028'' & \cmark & \cmark & G13 Barrier-free access while lifts replaced & \cmark & \cmark \\
+G03 Hub open vs lift works; what may close & \cmark & \cmark & G14 Existing leases during works & \cmark & \textcolor{pmOrange}{\xmark} \\
+G04 Who appoints the AAC operator, when & \cmark & \cmark & G15 Variation approval authority & \cmark & \cmark \\
+G05 Childcare month 18, licensing & \cmark & \cmark & G16 Weekly update content and cadence & \cmark & \cmark \\
+G06 Grant conditions ``will follow'' & \cmark & \cmark & G17 Rooftop garden feasibility / funding & \cmark & \cmark \\
+G07 Who funds the remaining 40\% & \cmark & \cmark & G18 Hazardous materials in a 1994 building & \cmark & \cmark \\
+G08 Is there a contingency & \cmark & \cmark & G19 Who operates the Hub after completion & \cmark & \textcolor{pmOrange}{\xmark} \\
+G09 Cost breakdown by element & \cmark & \cmark & G20 Are $\sim$100 childcare places fixed & \textcolor{pmOrange}{\xmark} & \textcolor{pmOrange}{\xmark} \\
+G10 Consultation timing and owner & \cmark & \cmark & G21 Working hours / noise limits & \textcolor{pmOrange}{\xmark} & \textcolor{pmOrange}{\xmark} \\
+G11 Measuring ``high resident satisfaction'' & \cmark & \cmark & G22 60\% of S\$18.5M vs eligible-cost basis & \cmark & \cmark \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\input{fig/goldgaps}
+\caption{Gold-gap coverage G01--G22 in both modes. Baseline surfaces 20 of 22, 91\%; the final LLM-mode run surfaces 18 of 22, 82\%. G20 and G21 are missed by both}
+\label{fig:gaps}
+\end{figure}
+
+\evalhead{How matching works.} Recall is measured by keyword groups, so a question phrased with different words counts as a miss.
+
+\evalhead{Review of the gold list.} On 14 November 2026 each of the 22 gold gaps was checked against the brief's scenario text, lines 77--111 of \code{data_pack/00_Brief_UPDATED.txt}. Every gap traces to a sentence there: for example G20 to ``about 100 children'', G21 to ``must remain open to residents throughout the works'', and G19 to ``becomes the estate's flagship shared space'' with no operator named. No gap was removed or added. The review was made with Claude and is owned by Qu Chengzhi.
+
+\evalhead{Why both modes miss G20 and G21.} Neither the curated checklist nor the generated register raises them. Which other gaps the LLM misses changes from run to run: G14 and G19 in the final run, G12, G15 and G19 in run 3.
+
+\section{Critic: planted faults}
+\label{sec:faults}
+
+Ten fault types are applied to both reports, plus one NRF-only fault, from \code{eval/faults.py}, giving the 21 planted faults of Table~\ref{tab:faults}. All 21 were stopped in both modes. Figure~\ref{fig:faults} groups them by the Critic rule each fault targets. The change-event fault \code{ignore_change_event} is exercised separately by T28.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\caption{Planted faults and the Critic rule that should stop each}
+\label{tab:faults}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{4.0cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{3.0cm}@{}}
+\toprule
+\textbf{Fault} & \textbf{What is planted} & \textbf{Critic rule} \\
+\midrule
+\code{wrong_number} & ``3.5\%'' changed to ``4.5\%'' & C1 untraceable number \\
+\code{invented_figure} & ``Eligible expenditure to date is S\$0.80M'' citing F54 & C1 \\
+\code{missing_citation} & The ``6.0\%'' line loses its citations & C1 uncited claim \\
+\code{drop_section} & ``Decisions needed'' or ``Status of each tranche condition'' removed & C3 \\
+\code{wrong_top5} & Last top-five line replaced by R23 & C4 \\
+\code{status_spin} & ``The project is on track overall.'' citing PR3-1 & C6 \\
+\code{remove_conflicts} & Conflicts section emptied & C7 \\
+\code{wrong_date} & 2027-03-19 $\rightarrow$ 2027-03-12 and 2027-03-03 $\rightarrow$ 2027-03-10 & C1 date not in sources \\
+\code{invented_person} & ``Mr Lee confirmed the closure plan\ldots'' citing EDC-3.2 & C1 person \\
+\code{bad_calc} & First computed value $\times 1.25$ in text and calc & C1 formula \\
+\code{hidden_gap}, NRF only & Every ``NOT FOUND'' replaced by ``pending'' or ``tracked by Finance'' & C8 \\
+\code{ignore_change_event}, T28 & Every line citing a CE-* event removed & C5 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\input{fig/faults}
+\caption{The 21 planted faults of T19 grouped by the Critic rule they target and split by report, derived from Table~\ref{tab:faults} and \texttt{eval/faults.py}. All 21 were stopped in both modes; the T28 fault for rule C5 is not included}
+\label{fig:faults}
+\end{figure}
+
+\section{Week 12 change: what the system produced for CE-01}
+\label{sec:ce01}
+
+The team's event is CE-01, because the team lead's matriculation number G2510505D ends in an odd digit; the system keeps both CE-01 and CE-02. The run below is the governance demonstration run in baseline mode on the mock board. The full note is \code{docs/governance/evidence/change_impact_CE-01.md}; Table~\ref{tab:ce01} summarises it.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\caption{What the system produced for change event CE-01}
+\label{tab:ce01}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{3.6cm}>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Item} & \textbf{Result} \\
+\midrule
+\textbf{Detected and marked stale} & 8 items: risks R01, R08, R18, R22; what-if W1; reports EDC-v1 and NRF-v1; milestone MS11. Downstream milestones: MS12, MS14, MS15, MS16, MS18 \\
+\textbf{Cost and time} & 4 lines, all traced by the Critic. Examples: asbestos S\$0.35--0.6M now fully Council-funded [F38, CE-01]; headroom of about S\$1.18M falls to S\$0.58--0.83M [F21, F38] \\
+\textbf{Refreshed automatically} & EDC-v2 and NRF-v2, both \code{critic_passed}, and W1 \\
+\textbf{Sponsor decisions} & 3 decisions, each with who and when, or NOT FOUND \\
+\textbf{UNRESOLVED} & 8 items: conflict CF12, where the event says the variation was submitted but EDC-6.5 and PR3-4 say it was not; ``Finance Director'' not identified in the pack; the April meeting date NOT FOUND; the final variation value; the riser-path float; and the detected conflicts CF03, CF04 and CF07 that the event touches \\
+\textbf{Actions for HC6} & 15 drafted, none applied until approved \\
+\bottomrule
+\end{tabularx}
+\end{table}

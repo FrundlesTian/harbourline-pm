@@ -1,0 +1,41 @@
+% Percentage measures, baseline: eval/results/latest.md; LLM mode:
+% docs/evaluation/evidence/llm_results_2026-11-14.md. Both runs 14 Nov 2026.
+\begin{tikzpicture}
+\begin{axis}[
+  ybar, bar width=24pt,
+  width=0.95\textwidth, height=7.5cm,
+  ymin=0, ymax=122,
+  ytick={0,20,...,100},
+  ylabel={\%},
+  symbolic x coords={Gap recall,Invention rate,Critic catch rate,Pass rate},
+  xtick=data,
+  x tick label style={font=\small},
+  yticklabel style={font=\small},
+  enlarge x limits=0.16,
+  legend style={at={(0.5,1.02)}, anchor=south, legend columns=-1, font=\small, draw=none,
+    /tikz/every even column/.append style={column sep=10pt}},
+  axis lines*=left,
+  ymajorgrids, grid style={pmLight},
+]
+\addplot[fill=pmNavy, draw=pmNavy] coordinates {(Gap recall,91) (Invention rate,0) (Critic catch rate,100) (Pass rate,100)};
+\addplot[fill=pmOrange, draw=pmOrange] coordinates {(Gap recall,82) (Invention rate,0) (Critic catch rate,100) (Pass rate,100)};
+\legend{Baseline,{LLM mode, DeepSeek}}
+% value labels (baseline left, LLM right)
+\tikzset{vl/.style={font=\scriptsize, align=center, anchor=south, inner sep=1.5pt}}
+\node[vl] at ([xshift=-13pt]axis cs:Gap recall,91) {91\%\\20/22};
+\node[vl] at ([xshift=13pt]axis cs:Gap recall,82) {82\%\\18/22};
+\node[vl] at ([xshift=-13pt]axis cs:Invention rate,7) {0.0\%\\0/75};
+\node[vl] at ([xshift=13pt]axis cs:Invention rate,7) {0.0\%\\0/92};
+\node[vl] at ([xshift=-13pt]axis cs:Critic catch rate,100) {100\%\\21/21};
+\node[vl] at ([xshift=13pt]axis cs:Critic catch rate,100) {100\%\\21/21};
+\node[vl] at ([xshift=-13pt]axis cs:Pass rate,100) {100\%\\34/34};
+\node[vl] at ([xshift=13pt]axis cs:Pass rate,100) {100\%\\34/34};
+% target markers
+\draw[black, very thick, dashed] ([xshift=-30pt]axis cs:Gap recall,80) -- ([xshift=30pt]axis cs:Gap recall,80);
+\node[font=\scriptsize, anchor=west] at ([xshift=30pt]axis cs:Gap recall,80) {target $\geq$80};
+\draw[black, very thick, dashed] ([xshift=-30pt]axis cs:Invention rate,5) -- ([xshift=30pt]axis cs:Invention rate,5);
+\node[font=\scriptsize, anchor=west] at ([xshift=30pt]axis cs:Invention rate,5) {target $\leq$5};
+\draw[black, very thick, dashed] ([xshift=-30pt]axis cs:Critic catch rate,90) -- ([xshift=30pt]axis cs:Critic catch rate,90);
+\node[font=\scriptsize, anchor=west] at ([xshift=30pt]axis cs:Critic catch rate,90) {target $\geq$90};
+\end{axis}
+\end{tikzpicture}
