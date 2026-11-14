@@ -1,15 +1,15 @@
 {
-  "generated": "2026-11-14T18:00:37+08:00",
+  "generated": "2026-11-11T16:07:12+08:00",
   "llm": true,
-  "passed": 34,
-  "total": 34,
+  "passed": 29,
+  "total": 33,
   "measures": {
     "gap_recall": {
       "value": 0.818,
       "hits": 18,
       "total": 22,
       "missed": [
-        "G14 Existing leases/licences during works",
+        "G12 Energy performance target",
         "G19 Who operates the Hub after completion",
         "G20 Is ~100 childcare places a fixed requirement given demand",
         "G21 Permitted working hours / noise limits while the Hub is open"
@@ -45,45 +45,49 @@
     },
     "rerun_pm": {
       "first": {
-        "created": 111,
+        "created": 107,
         "updated": 0,
         "unchanged": 0
       },
       "second": {
         "created": 0,
         "updated": 0,
-        "unchanged": 111
+        "unchanged": 107
       },
       "duplicates": {}
     },
     "invention_rate": {
-      "value": 0.0,
-      "claims_sampled": 92,
-      "untraceable": 0,
-      "examples": []
+      "value": 0.0319,
+      "claims_sampled": 94,
+      "untraceable": 3,
+      "examples": [
+        "risk R02: Hub open during works extends programme. Trigger: Council does not accept closure proposal by lift p -> ['date 2027-05-15 not found in cited sources']",
+        "risk R15: Grant amount shortfall against assumed 60% of S$18.5m. Trigger: Eligible cost reconciliation shows g -> ['number 11.1 not traceable to cited sources']",
+        "risk R24: Asbestos variation not submitted, delaying removal and critical path. Trigger: Variation order not s -> ['number 25 not traceable to cited sources']"
+      ]
     },
     "rerun_stability": {
       "hash_run1": [
-        "db1340e1f9d5",
-        "b6cd6db7f713",
-        "258e683cac37"
+        "7656ea05a9d7",
+        "c741d5992dba",
+        "c737f3550e47"
       ],
       "hash_run2": [
-        "db1340e1f9d5",
-        "1c1a6e8959b4",
-        "258e683cac37"
+        "2656fb7c1a17",
+        "af6959f4b024",
+        "072aec9495dc"
       ],
       "new_report_versions_on_identical_rerun": 0,
       "pm": {
         "first": {
-          "created": 111,
+          "created": 107,
           "updated": 0,
           "unchanged": 0
         },
         "second": {
           "created": 0,
           "updated": 0,
-          "unchanged": 111
+          "unchanged": 107
         },
         "duplicates": {}
       },
@@ -97,24 +101,24 @@
     "cost_time": {
       "runs": [
         {
-          "seconds": 89.645,
-          "tokens_in": 56458,
-          "tokens_out": 22650,
-          "cost_usd": 0.025321,
+          "seconds": 96.304,
+          "tokens_in": 50755,
+          "tokens_out": 21671,
+          "cost_usd": 0.023313,
           "llm": true
         },
         {
-          "seconds": 95.444,
-          "tokens_in": 56844,
-          "tokens_out": 23673,
-          "cost_usd": 0.025859,
+          "seconds": 101.335,
+          "tokens_in": 51033,
+          "tokens_out": 23231,
+          "cost_usd": 0.024046,
           "llm": true
         }
       ],
-      "mean_seconds": 92.544,
-      "mean_tokens": 79812,
-      "mean_cost_usd": 0.02559,
-      "eval_wall_seconds": 260.36
+      "mean_seconds": 98.82,
+      "mean_tokens": 73345,
+      "mean_cost_usd": 0.023679,
+      "eval_wall_seconds": 273.31
     }
   },
   "cases": [
@@ -123,7 +127,7 @@
       "category": "Gap recall",
       "description": "System surfaces the brief's open questions unprompted (gold list, keyword match)",
       "pass": true,
-      "detail": "recall 0.82 (18/22); missed: ['G14 Existing leases/licences during works', 'G19 Who operates the Hub after completion', 'G20 Is ~100 childcare places a fixed requirement given demand', 'G21 Permitted working hours / noise limits while the Hub is open']"
+      "detail": "recall 0.82 (18/22); missed: ['G12 Energy performance target', 'G19 Who operates the Hub after completion', 'G20 Is ~100 childcare places a fixed requirement given demand', 'G21 Permitted working hours / noise limits while the Hub is open']"
     },
     {
       "id": "T02",
@@ -137,21 +141,21 @@
       "category": "Planning",
       "description": "Every kept WBS element traces to a scope line; untraceable candidates are flagged, not kept",
       "pass": true,
-      "detail": "untraced kept=[]; flagged=['Tendering the design-and-build contract', 'Fundraising work package', 'Grant funding request in monthly report']"
+      "detail": "untraced kept=[]; flagged=['Refurbishment of commercial premises (food court and leased retail) as grant-funded work', 'Landscaping or rooftop amenity not forming part of a social service facility', 'Tendering of the design-and-build contract', 'Fundraising work package']"
     },
     {
       "id": "T04",
       "category": "Planning",
       "description": "WBS reaches Level 3 with dictionary and owner; unassigned owners are visible",
-      "pass": true,
-      "detail": "L3=61 unassigned=['3.3.2']"
+      "pass": false,
+      "detail": "L3=60 unassigned=['3.2.2', '3.3.2']"
     },
     {
       "id": "T05",
       "category": "Planning",
       "description": "Milestone dependencies are valid; undated milestones say TBD/NOT FOUND rather than inventing",
       "pass": true,
-      "detail": "dependency issues=[]; undated=['MS06', 'MS07', 'MS08', 'MS09', 'MS10', 'MS11', 'MS12', 'MS14', 'MS15', 'MS16', 'MS17', 'MS19', 'MS20', 'MS21']"
+      "detail": "dependency issues=[]; undated=['MS02', 'MS05', 'MS06', 'MS07', 'MS08', 'MS09', 'MS10', 'MS11', 'MS12', 'MS13', 'MS14', 'MS15', 'MS16', 'MS17', 'MS19', 'MS20', 'MS21']"
     },
     {
       "id": "T06",
@@ -228,7 +232,7 @@
       "category": "Risk",
       "description": "Register: every risk scored, owned, triggered, linked to WBS and sourced; seed QA finds known defects",
       "pass": true,
-      "detail": "24 risks, defects=[]; seed QA ok=True"
+      "detail": "25 risks, defects=[]; seed QA ok=True"
     },
     {
       "id": "T17",
@@ -270,7 +274,7 @@
       "category": "Re-run stability",
       "description": "Second sync with the same plan updates nothing and creates no duplicates",
       "pass": true,
-      "detail": "first={'created': 111, 'updated': 0, 'unchanged': 0} second={'created': 0, 'updated': 0, 'unchanged': 111} readback verified=True"
+      "detail": "first={'created': 107, 'updated': 0, 'unchanged': 0} second={'created': 0, 'updated': 0, 'unchanged': 107} readback verified=True"
     },
     {
       "id": "T23",
@@ -283,8 +287,8 @@
       "id": "T24",
       "category": "Change",
       "description": "CE-01: stale plan/register/reports detected, cost/time cited, CF12 conflict and decisions raised, actions pending",
-      "pass": true,
-      "detail": "stale=[('milestone', 'MS05'), ('milestone', 'MS07'), ('milestone', 'MS13'), ('milestone', 'MS18'), ('milestone', 'MS21'), ('report', 'EDC-2027-03-31-v1'), ('report', 'NRF-2027-03-31-v1'), ('risk', 'R01'), ('risk', 'R08'), ('risk', 'R16'), ('risk', 'R17'), ('risk', 'R21'), ('whatif', 'W1')] cf12=True decisions=5 pending=16 traced=True"
+      "pass": false,
+      "detail": "stale=[('milestone', 'MS02'), ('milestone', 'MS03'), ('milestone', 'MS11'), ('milestone', 'MS18'), ('report', 'EDC-2027-03-31-v1'), ('report', 'NRF-2027-03-31-v1'), ('risk', 'R01'), ('risk', 'R08'), ('risk', 'R09'), ('risk', 'R15'), ('risk', 'R17'), ('risk', 'R20'), ('risk', 'R23'), ('risk', 'R24'), ('risk', 'R25'), ('whatif', 'W1')] cf12=False decisions=5 pending=19 traced=True"
     },
     {
       "id": "T25",
@@ -298,14 +302,14 @@
       "category": "Change",
       "description": "Nothing changes until HC6; after approval the risk is re-scored and reports refresh again",
       "pass": true,
-      "detail": "R01 20->20 (pending) ->25 (approved, proposed 25); live reports ['EDC-2027-03-31-v3', 'NRF-2027-03-31-v3']"
+      "detail": "R01 20->20 (pending) ->25 (approved); live reports ['EDC-2027-03-31-v3', 'NRF-2027-03-31-v3']"
     },
     {
       "id": "T27",
       "category": "Change",
-      "description": "CE-02: re-scores proposed for existing risks, affected and downstream milestones identified",
-      "pass": true,
-      "detail": "rescore=['R06', 'R15', 'R26'] ms=['MS04', 'MS05', 'MS12', 'MS13', 'MS14', 'MS15', 'MS16', 'MS18', 'MS21'] downstream=['MS17', 'MS19', 'MS20']"
+      "description": "CE-02: Tranche 2 at risk, R06/R17 re-score proposed, downstream milestones identified",
+      "pass": false,
+      "detail": "rescore=['R16'] ms=['MS02', 'MS03', 'MS07', 'MS14', 'MS15', 'MS16', 'MS18'] downstream=['MS17', 'MS19', 'MS20', 'MS21']"
     },
     {
       "id": "T28",
@@ -326,7 +330,7 @@
       "category": "Governance",
       "description": "Audit trail: every PM write has an audit row; every approval names a human",
       "pass": true,
-      "detail": "pm write rows=111, issues=111, unnamed approvals=0"
+      "detail": "pm write rows=107, issues=107, unnamed approvals=0"
     },
     {
       "id": "T31",
@@ -340,21 +344,14 @@
       "category": "Invention rate",
       "description": "Share of sampled output claims not traceable to brief / pack / sponsor answers",
       "pass": true,
-      "detail": "0/92 untraceable (0.0%)"
+      "detail": "3/94 untraceable (3.2%)"
     },
     {
       "id": "T33",
       "category": "Re-run stability",
       "description": "Two full runs on the same inputs give identical plan, register, gaps and report content",
-      "pass": true,
-      "detail": "gaps hash equal=True; new report versions on identical re-run=0"
-    },
-    {
-      "id": "T34",
-      "category": "Memory",
-      "description": "Frequency question answered with citation: how often the EDC meets (both sources)",
-      "pass": true,
-      "detail": "'How often does the EDC meet?' -> cites ['EDC-1.6', 'EDC-2.3']"
+      "pass": false,
+      "detail": "gaps hash equal=False; new report versions on identical re-run=0"
     }
   ]
 }
