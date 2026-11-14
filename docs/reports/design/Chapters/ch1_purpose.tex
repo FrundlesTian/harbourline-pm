@@ -1,0 +1,29 @@
+\chapter{Purpose, scope and design principles}
+\label{ch:purpose}
+
+\section{Document conventions}
+\label{sec:conventions}
+
+\noindent\textbf{Team.} Group 5 has no team name. Its members are Tian Yujia, G2510505D, team lead, responsible for the Design Document and the demo system; Qu Chengzhi, G2510533D, Evaluation Report; Huang Hao, G2510626K, Governance Log; Zhang Yinan, G2505943K, demo video; Liu Beiqi, G2510916G, slides; and Zhao Lingfeng, G2510595H. The agent modules have no individual owners; the team lead is responsible for all of them.\par\smallskip
+
+\noindent\textbf{Repository.} The public repository is \code{github.com/FrundlesTian/harbourline-pm}, branch \code{main}, latest commit.\par\smallskip
+
+\noindent\textbf{Evidence convention.} \code{path:lines} refers to the repository; \code{BRIEF-p3-5}, \code{SA-Q1}, \code{EDC-2.3}, \code{NRF-4.2} and similar IDs are the system's own source IDs, listed in Appendix~\ref{app:conventions}. Requirement references such as \code{L137} are line numbers in \code{data_pack/00_Brief_UPDATED.txt}.
+
+\section{Purpose and scope}
+
+Six agent modules and a governance layer plan, track and report the Harbourline refurbishment behind one local web UI, \code{server.py}, and write the approved plan into Jira Cloud. Requirements come from the UPDATED brief, L137--L201, only.
+
+\section{Design principles}
+\label{sec:principles}
+
+\textbf{Core principle --- the LLM drafts, deterministic code decides.} It is implemented as four rules:
+
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item \textbf{Facts are verified, not generated.} Report numbers and dates come from facts F01--F78. Each fact is rejected at load unless its exact quote is in its source chunk, see \code{app/facts_catalog.py:89-108}. Conflict detectors CF01--CF12 compute from these facts in \code{app/planning.py:219-281}.
+  \item \textbf{The LLM drafts structured content and must cite.} By default the plan, risk register, report bodies and change analysis are generated as JSON carrying source and fact IDs, see \code{app/planning.py:327-487}, \code{app/risk.py:173-235}, \code{app/reporting.py:161-238} and \code{app/change.py:128-191}. The grounding rule is in \code{app/gen.py:73-76}.
+  \item \textbf{Validators and a Critic check every draft.} Unknown IDs are dropped, WBS must trace to an in-scope line, and a date survives only if a cited source states it, see \code{app/planning.py:423-432}. The Critic traces every number, date and person in a report to what the line cites, see \code{app/critic.py:82-120}.
+  \item \textbf{A curated baseline is the fallback} when no model is configured or validation fails. The reason is recorded by \code{app/gen.py:61-66} and shown on the Overview page. The committed baseline evaluation passes 34 of 34 cases in this mode, see \code{eval/results/latest.md}; the LLM mode also passes 34 of 34, as reported in the Evaluation Report.
+\end{enumerate}
+
+Human checkpoints HC1--HC7 sit between agent output and anything a stakeholder or the PM tool sees; Chapter~\ref{ch:checkpoints} maps them. Open questions and assumptions are kept in the assumption register in Appendix~\ref{app:assumptions}, which the Planning Agent seeds automatically in \code{app/planning.py:513}.

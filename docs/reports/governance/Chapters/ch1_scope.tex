@@ -1,0 +1,34 @@
+\chapter{Scope and sources of the records}
+\label{ch:scope}
+
+This Governance Log belongs to the Harbourline AI PM system of MA6094 Capstone Group 5. It is dated 14 November 2026 and is a draft for team review. The governance owner is Huang Hao, G2510626K; the team lead is Tian Yujia, G2510505D.
+
+The system writes its governance records itself, into the SQLite tables \code{audit_log}, \code{approvals} and \code{handoffs}, see \code{app/db.py:58-64,81-83}. Keeping these records inside the system, rather than reconstructing them afterwards, follows the ``govern'' and ``map'' functions of AI risk management, which ask for documented accountability and traceable decisions \parencite{nist2023airmf}. Two kinds of record are reported here. Table~\ref{tab:sources} lists them, together with the team's real run on its Jira site.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Sources of the governance records}
+\label{tab:sources}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.3cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{4.2cm}}
+\toprule
+\textbf{Source} & \textbf{What it is} & \textbf{Files} \\
+\midrule
+\textbf{Demonstration run}, regenerated 14 Nov 2026 on the latest code &
+One end-to-end session produced by \code{scripts/governance_demo.py} on a throw-away database. The rows, IDs, hashes and decisions are identical to the first run of 8 Nov 2026; only timestamps, the run ID and the run time changed. It runs in baseline mode, with no LLM calls, against the mock board. Every approval goes through the same server handler as the UI, \code{server.api_approve}, signed by the seeded \textbf{role accounts}. These are demonstration decisions, not the team's real decisions. &
+In \code{docs/governance/evidence/}: \code{audit_log.csv}, 188 rows; \code{agent_writes.csv}, 137 rows; \code{approvals.csv}, 10 rows; \code{bias_check.json}; \code{change_impact_CE-01.md}; \code{summary.json} \\
+\addlinespace
+\textbf{Reset check}, 14 Nov 2026 &
+\code{scripts/reset_check.py} exercises the start-screen Reset demo on a throw-away database with the mock board and Jira credentials blanked &
+\code{docs/governance/evidence/reset_check.json} \\
+\addlinespace
+\textbf{Team's real run} &
+The run on the team's Jira site, made from the team's demo machine: Free plan, project \code{SCRUM}, token of Tian Yujia &
+Audit and approvals exports are kept on that machine, as the team states. In the repository: a read-only Jira snapshot taken on 14 Nov 2026, \code{docs/governance/evidence/jira_snapshot_2026-11-14.json}, with 92 issues \code{SCRUM-283}--\code{374}, all \texttt{ai-generated}, 92 distinct external keys and 18 Blocks links; see Appendix~\ref{app:jira} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph*{Reproduction and token hygiene.} The two evidence sets are reproduced with \texttt{python3 scripts/governance\_demo.py} and \texttt{python3 scripts/reset\_check.py}; see Appendix~\ref{app:repro}. The export contains no tokens: a scan for token patterns found 0 matches, and all log text passes through \code{audit.redact()} in \code{app/audit.py:33-40}.
+
+\paragraph*{Structure of this log.} Chapter~\ref{ch:audit} reports the audit records of agent write operations. Chapter~\ref{ch:approvals} shows who approved each of the human checkpoints HC1 to HC7. Chapter~\ref{ch:bias} covers the bias and fairness check BIAS-1, Chapter~\ref{ch:guardrails} the guardrail events including the Reset demo, and Chapter~\ref{ch:incidents} the incidents I-01 to I-16 and the changes made. The appendices list the approval rows, the reset check results, the audit action counts, the reproduction commands and a summary of the read-only Jira snapshot.

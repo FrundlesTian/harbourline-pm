@@ -293,7 +293,7 @@ def _llm_extra_gaps():
     user = (f"SOURCES (the sponsor brief):\n{src}\n\nQuestions already raised:\n{have}\n\n"
             "List up to 5 ADDITIONAL decisions a planner needs that the brief leaves missing or contradictory. "
             'Return JSON {"gaps":[{"question":"...","why":"...","source":"BRIEF-p3-x"}]}. Use only the source ids shown.')
-    data, _ = llm.chat_json(AGENT, sysmsg, user)
+    data, _ = llm.cached_json(AGENT, sysmsg, user)   # cached: identical re-runs stay identical
     n = 0
     for i, g in enumerate((data or {}).get("gaps", [])[:5], start=1):
         if not sources.get(g.get("source", "")) or not g.get("question"):
@@ -341,6 +341,10 @@ def _gen_scope_gaps():
     data, _ = llm.cached_json(AGENT, _sys(), user, max_tokens=6000)
     if not data:
         return None, None, "no JSON from LLM (scope/gaps)"
+    if not data.get("gaps"):        # answer stopped after the scope: ask once for the register alone
+        more, _ = llm.cached_json(AGENT, _sys(), user + '\n\nReturn ONLY part (b): {"gaps":[...]}', max_tokens=5000)
+        if more and more.get("gaps"):
+            data["gaps"] = more["gaps"]
     scope, seen = [], set()
     for s in data.get("scope", []):
         sid, src = str(s.get("id", "")), gen.known([s.get("source")])

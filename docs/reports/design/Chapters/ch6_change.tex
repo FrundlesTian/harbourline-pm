@@ -1,0 +1,16 @@
+\chapter{Change handling and staleness}
+\label{ch:change}
+
+The Change Agent, whose card is Table~\ref{tab:card-change}, handles a change event in five stages:
+
+\begin{itemize}[leftmargin=*,itemsep=2pt]
+  \item \textbf{Provenance.} Every stored output carries \code{tags} from a controlled vocabulary, see \code{app/gen.py:14-16} and \code{app/db.py:1-2}. Generated items may only use these tags, see \code{app/gen.py:57-58}.
+  \item \textbf{Detection.} A change event such as \code{CE-01} is injected as a dated, numbered source without editing the pack, see \code{app/change.py:236-245}. Its tags come from keyword rules in \code{app/change.py:21-43}.
+  \item \textbf{Matching.} An item is stale when it shares a primary tag with the event, or two broad tags, see \code{app/change.py:251-255}. Milestones downstream of an affected milestone are found by a dependency walk in \code{app/change.py:51-58}. Stale risks, what-ifs, reports and milestones are written to \code{stale_items} with a reason, see \code{app/change.py:267-282}. Detected conflicts that match the event by the same rule are always listed as UNRESOLVED in the Change Impact Note, whether or not the generated analysis names them, see \code{app/change.py:285-290}.
+  \item \textbf{Refresh without a manual re-run.} What-ifs and report drafts regenerate immediately; the new reports must cite the event or the Critic stops them under rule C5, see \code{app/change.py:295-306} and eval T25, T28.
+  \item \textbf{Waiting for HC6.} Risk re-scores, milestone notes, assumption updates and PM comment + label changes are drafted as pending actions and applied only after HC6, see \code{app/change.py:348-431}. An approved re-score makes the live reports stale and regenerates them, see \code{app/change.py:399-405} and eval T26.
+\end{itemize}
+
+\section{Week 12 run}
+
+The team's event is \textbf{CE-01}, because the last digit of the team lead's matriculation number, G2510505D, is odd. The team confirmed that the wording in \code{change_events/CE-01.json} matches the Week 12 Guide. According to a team statement of 14 Nov 2026, the team ran CE-01 on its demo machine, where the records are kept. The committed evidence is the evaluation run, eval T24--T28 in baseline mode, and the governance demonstration run in \code{docs/governance/evidence/change_impact_CE-01.md}.

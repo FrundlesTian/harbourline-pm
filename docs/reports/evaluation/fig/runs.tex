@@ -1,0 +1,20 @@
+% Passed cases per LLM-mode run, 14 Nov 2026; from evaluation_report.md section 5 and the logs in
+% docs/evaluation/evidence/ (run 2 has no log in the repository).
+\begin{tikzpicture}
+\begin{axis}[
+  ybar, bar width=26pt,
+  width=0.7\textwidth, height=6cm,
+  ymin=0, ymax=38, ytick={0,10,20,30},
+  ylabel={Cases passed},
+  symbolic x coords={Run 1 before fixes,Run 2,Run 3,Final},
+  xtick={Run 1 before fixes,Run 2,Run 3,Final}, x tick label style={font=\small},
+  yticklabel style={font=\small},
+  enlarge x limits=0.18,
+  nodes near coords={\pgfmathprintnumber{\pgfplotspointmeta}/34},
+  nodes near coords style={font=\scriptsize},
+  axis lines*=left, ymajorgrids, grid style={pmLight},
+]
+\addplot[fill=pmGrey, draw=pmGrey, bar shift=0pt] coordinates {(Run 1 before fixes,31) (Run 2,32) (Run 3,31)};
+\addplot[fill=pmTeal, draw=pmTeal, bar shift=0pt] coordinates {(Final,34)};
+\end{axis}
+\end{tikzpicture}

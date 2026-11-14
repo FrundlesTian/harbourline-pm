@@ -11,11 +11,15 @@ AGENT = "memory"
 GENERIC = {sources.stem(w) for w in (
     "harbourline hub project community refurbishment pack data brief say tell according state current planned plan "
     "will pm council edc minute report happened happen status latest update describe explain mean main give "
-    "receive received get got did does know list show").split()}
+    "receive received get got did does know list show often frequently frequency").split()}
 SYNONYMS = {"contractor": ["khb", "kestrel", "builder"], "grant": ["nrf", "fund"], "fund": ["nrf", "grant"],
             "aac": ["active", "ageing"], "sponsor": ["koh", "director"], "childcare": ["childhood", "child"],
             "finish": ["completion"], "start": ["possession", "commence"], "money": ["budget", "cost"]}
 CUE_TYPES = [  # (question cue, evidence pattern the answer sentence must contain)
+    # "how often" asks for a frequency; the word "often" itself is generic (GENERIC above)
+    (re.compile(r"\b(how often|how frequently|frequency)\b", re.I),
+     re.compile(r"\b(daily|weekly|fortnightly|monthly|quarterly|annually|yearly|every|each (day|week|month)|"
+                r"times a|per (day|week|month)|alternate)\b", re.I)),
     (re.compile(r"\b(how much|cost|budget|price|amount|spend|funding gap)\b", re.I),
      re.compile(r"S\$|\$|million|\d{1,3},\d{3}|not yet estimated|\d%", re.I)),
     (re.compile(r"\b(when|date|deadline|by when|what day)\b", re.I),

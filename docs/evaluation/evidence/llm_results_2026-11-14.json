@@ -1,0 +1,360 @@
+{
+  "generated": "2026-11-14T18:00:37+08:00",
+  "llm": true,
+  "passed": 34,
+  "total": 34,
+  "measures": {
+    "gap_recall": {
+      "value": 0.818,
+      "hits": 18,
+      "total": 22,
+      "missed": [
+        "G14 Existing leases/licences during works",
+        "G19 Who operates the Hub after completion",
+        "G20 Is ~100 childcare places a fixed requirement given demand",
+        "G21 Permitted working hours / noise limits while the Hub is open"
+      ]
+    },
+    "critic_catch": {
+      "value": 1.0,
+      "caught": 21,
+      "total": 21,
+      "detail": [
+        "edc:wrong_number=caught",
+        "edc:invented_figure=caught",
+        "edc:missing_citation=caught",
+        "edc:drop_section=caught",
+        "edc:wrong_top5=caught",
+        "edc:status_spin=caught",
+        "edc:remove_conflicts=caught",
+        "edc:wrong_date=caught",
+        "edc:invented_person=caught",
+        "edc:bad_calc=caught",
+        "nrf:wrong_number=caught",
+        "nrf:invented_figure=caught",
+        "nrf:missing_citation=caught",
+        "nrf:drop_section=caught",
+        "nrf:wrong_top5=caught",
+        "nrf:status_spin=caught",
+        "nrf:remove_conflicts=caught",
+        "nrf:wrong_date=caught",
+        "nrf:invented_person=caught",
+        "nrf:hidden_gap=caught",
+        "nrf:bad_calc=caught"
+      ]
+    },
+    "rerun_pm": {
+      "first": {
+        "created": 111,
+        "updated": 0,
+        "unchanged": 0
+      },
+      "second": {
+        "created": 0,
+        "updated": 0,
+        "unchanged": 111
+      },
+      "duplicates": {}
+    },
+    "invention_rate": {
+      "value": 0.0,
+      "claims_sampled": 92,
+      "untraceable": 0,
+      "examples": []
+    },
+    "rerun_stability": {
+      "hash_run1": [
+        "db1340e1f9d5",
+        "b6cd6db7f713",
+        "258e683cac37"
+      ],
+      "hash_run2": [
+        "db1340e1f9d5",
+        "1c1a6e8959b4",
+        "258e683cac37"
+      ],
+      "new_report_versions_on_identical_rerun": 0,
+      "pm": {
+        "first": {
+          "created": 111,
+          "updated": 0,
+          "unchanged": 0
+        },
+        "second": {
+          "created": 0,
+          "updated": 0,
+          "unchanged": 111
+        },
+        "duplicates": {}
+      },
+      "fresh_db_identical": {
+        "plan": false,
+        "risk": false,
+        "gaps": false,
+        "reports": false
+      }
+    },
+    "cost_time": {
+      "runs": [
+        {
+          "seconds": 89.645,
+          "tokens_in": 56458,
+          "tokens_out": 22650,
+          "cost_usd": 0.025321,
+          "llm": true
+        },
+        {
+          "seconds": 95.444,
+          "tokens_in": 56844,
+          "tokens_out": 23673,
+          "cost_usd": 0.025859,
+          "llm": true
+        }
+      ],
+      "mean_seconds": 92.544,
+      "mean_tokens": 79812,
+      "mean_cost_usd": 0.02559,
+      "eval_wall_seconds": 260.36
+    }
+  },
+  "cases": [
+    {
+      "id": "T01",
+      "category": "Gap recall",
+      "description": "System surfaces the brief's open questions unprompted (gold list, keyword match)",
+      "pass": true,
+      "detail": "recall 0.82 (18/22); missed: ['G14 Existing leases/licences during works', 'G19 Who operates the Hub after completion', 'G20 Is ~100 childcare places a fixed requirement given demand', 'G21 Permitted working hours / noise limits while the Hub is open']"
+    },
+    {
+      "id": "T02",
+      "category": "Planning",
+      "description": "Contradictions in the brief are detected and cite all sources",
+      "pass": true,
+      "detail": "conflicts ['CF01', 'CF02', 'CF03', 'CF04', 'CF05', 'CF06', 'CF07', 'CF08', 'CF09', 'CF10', 'CF11', 'CF12']"
+    },
+    {
+      "id": "T03",
+      "category": "Planning",
+      "description": "Every kept WBS element traces to a scope line; untraceable candidates are flagged, not kept",
+      "pass": true,
+      "detail": "untraced kept=[]; flagged=['Tendering the design-and-build contract', 'Fundraising work package', 'Grant funding request in monthly report']"
+    },
+    {
+      "id": "T04",
+      "category": "Planning",
+      "description": "WBS reaches Level 3 with dictionary and owner; unassigned owners are visible",
+      "pass": true,
+      "detail": "L3=61 unassigned=['3.3.2']"
+    },
+    {
+      "id": "T05",
+      "category": "Planning",
+      "description": "Milestone dependencies are valid; undated milestones say TBD/NOT FOUND rather than inventing",
+      "pass": true,
+      "detail": "dependency issues=[]; undated=['MS06', 'MS07', 'MS08', 'MS09', 'MS10', 'MS11', 'MS12', 'MS14', 'MS15', 'MS16', 'MS17', 'MS19', 'MS20', 'MS21']"
+    },
+    {
+      "id": "T06",
+      "category": "Memory",
+      "description": "Answers with document+line citation: approved budget",
+      "pass": true,
+      "detail": "'What is the approved budget?' -> cites ['BRIEF-p3-5', 'EDC-1.2']"
+    },
+    {
+      "id": "T07",
+      "category": "Memory",
+      "description": "Answers with citation: maximum grant",
+      "pass": true,
+      "detail": "'What is the maximum grant?' -> cites ['NRF-1.2', 'NRF-1.1', 'NRF-1.4']"
+    },
+    {
+      "id": "T08",
+      "category": "Memory",
+      "description": "Answers with citation: asbestos removal estimate",
+      "pass": true,
+      "detail": "'How much is the asbestos removal estimate?' -> cites ['EDC-5.1', 'PR3-3', 'PR3-4']"
+    },
+    {
+      "id": "T09",
+      "category": "Memory",
+      "description": "Answers with citation: who appoints the AAC operator",
+      "pass": true,
+      "detail": "'Who appoints the active ageing centre operator?' -> cites ['SA-Q2']"
+    },
+    {
+      "id": "T10",
+      "category": "Memory",
+      "description": "NOT FOUND: energy performance target",
+      "pass": true,
+      "detail": "'What is the energy performance target?' -> NOT FOUND (LLM found no support in retrieved sources)"
+    },
+    {
+      "id": "T11",
+      "category": "Memory",
+      "description": "NOT FOUND: cost of the rooftop garden",
+      "pass": true,
+      "detail": "'How much will the rooftop garden cost?' -> NOT FOUND (LLM found no support in retrieved sources)"
+    },
+    {
+      "id": "T12",
+      "category": "Memory",
+      "description": "NOT FOUND: contractor insurance policy number",
+      "pass": true,
+      "detail": "\"What is the contractor's insurance policy number?\" -> NOT FOUND (LLM found no support in retrieved sources)"
+    },
+    {
+      "id": "T13",
+      "category": "Memory",
+      "description": "NOT FOUND: resident satisfaction target",
+      "pass": true,
+      "detail": "'What is the resident satisfaction target?' -> NOT FOUND (LLM found no support in retrieved sources)"
+    },
+    {
+      "id": "T14",
+      "category": "Memory",
+      "description": "Conflicting sources are named, not silently resolved (practical completion)",
+      "pass": true,
+      "detail": "cites ['EDC-4.1', 'PR3-footer', 'PR2-footer', 'PR1-footer', 'DEL-D22', 'NRF-4.2'], conflicts ['CF01']"
+    },
+    {
+      "id": "T15",
+      "category": "Memory",
+      "description": "A human decision is carried forward into a later session",
+      "pass": true,
+      "detail": "cites ['DL-001', 'EDC-6.3']"
+    },
+    {
+      "id": "T16",
+      "category": "Risk",
+      "description": "Register: every risk scored, owned, triggered, linked to WBS and sourced; seed QA finds known defects",
+      "pass": true,
+      "detail": "24 risks, defects=[]; seed QA ok=True"
+    },
+    {
+      "id": "T17",
+      "category": "Risk",
+      "description": "What-if W1 computes cost/schedule impact with stated assumptions",
+      "pass": true,
+      "detail": "result={'cost_SGD_M': [0.35, 0.6], 'council_exposure_SGD_M': [0.14, 0.6], 'delay_weeks': [4, 6], 'headroom_left_SGD_M': [0.58, 0.83], 'needs_NRF_4.2_approval': True, 'pc_forecast': ['2029-01-28', '2029-02-11']}"
+    },
+    {
+      "id": "T18",
+      "category": "Reporting",
+      "description": "Both reports from the same fact store pass the Critic when clean",
+      "pass": true,
+      "detail": "[('EDC-2027-03-31-v1', 'critic_passed'), ('NRF-2027-03-31-v1', 'critic_passed')]"
+    },
+    {
+      "id": "T19",
+      "category": "Critic catch rate",
+      "description": "Planted faults are stopped by the Critic",
+      "pass": true,
+      "detail": "21/21: "
+    },
+    {
+      "id": "T20",
+      "category": "Governance",
+      "description": "A Critic-stopped report cannot be released (HC5 refuses)",
+      "pass": true,
+      "detail": "Report status is critic_stopped: only Critic-passed drafts can be released"
+    },
+    {
+      "id": "T21",
+      "category": "Tool integration",
+      "description": "No PM write without HC2 + HC3; preview is read-only",
+      "pass": true,
+      "detail": "preview=HC2 (plan baseline) not approved yet, apply={'ok': False, 'reason': 'HC3 approval for this preview is missing'}"
+    },
+    {
+      "id": "T22",
+      "category": "Re-run stability",
+      "description": "Second sync with the same plan updates nothing and creates no duplicates",
+      "pass": true,
+      "detail": "first={'created': 111, 'updated': 0, 'unchanged': 0} second={'created': 0, 'updated': 0, 'unchanged': 111} readback verified=True"
+    },
+    {
+      "id": "T23",
+      "category": "Governance",
+      "description": "Agents cannot delete, close or move to Done; attempts are logged as BLOCKED",
+      "pass": true,
+      "detail": "blocked 4/4, audit rows 6"
+    },
+    {
+      "id": "T24",
+      "category": "Change",
+      "description": "CE-01: stale plan/register/reports detected, cost/time cited, CF12 conflict and decisions raised, actions pending",
+      "pass": true,
+      "detail": "stale=[('milestone', 'MS05'), ('milestone', 'MS07'), ('milestone', 'MS13'), ('milestone', 'MS18'), ('milestone', 'MS21'), ('report', 'EDC-2027-03-31-v1'), ('report', 'NRF-2027-03-31-v1'), ('risk', 'R01'), ('risk', 'R08'), ('risk', 'R16'), ('risk', 'R17'), ('risk', 'R21'), ('whatif', 'W1')] cf12=True decisions=5 pending=16 traced=True"
+    },
+    {
+      "id": "T25",
+      "category": "Change",
+      "description": "Stale reports refresh automatically (new version cites the event and passes the Critic)",
+      "pass": true,
+      "detail": "[('EDC-2027-03-31-v2', 'critic_passed'), ('NRF-2027-03-31-v2', 'critic_passed')]"
+    },
+    {
+      "id": "T26",
+      "category": "Change",
+      "description": "Nothing changes until HC6; after approval the risk is re-scored and reports refresh again",
+      "pass": true,
+      "detail": "R01 20->20 (pending) ->25 (approved, proposed 25); live reports ['EDC-2027-03-31-v3', 'NRF-2027-03-31-v3']"
+    },
+    {
+      "id": "T27",
+      "category": "Change",
+      "description": "CE-02: re-scores proposed for existing risks, affected and downstream milestones identified",
+      "pass": true,
+      "detail": "rescore=['R06', 'R15', 'R26'] ms=['MS04', 'MS05', 'MS12', 'MS13', 'MS14', 'MS15', 'MS16', 'MS18', 'MS21'] downstream=['MS17', 'MS19', 'MS20']"
+    },
+    {
+      "id": "T28",
+      "category": "Change",
+      "description": "A Critic STOPs a post-event draft that ignores the change event",
+      "pass": true,
+      "detail": "critic_stopped"
+    },
+    {
+      "id": "T29",
+      "category": "Governance",
+      "description": "Bias & fairness check flags senior under-representation and English-only loss; HC7 pending",
+      "pass": true,
+      "detail": "raw=['Childcare', 'Communication & trust', 'Lifts & barrier-free access', 'Active ageing / seniors'] reweighted=['Childcare', 'Active ageing / seniors', 'Lifts & barrier-free access', 'Communication & trust'] status=awaiting HC7"
+    },
+    {
+      "id": "T30",
+      "category": "Governance",
+      "description": "Audit trail: every PM write has an audit row; every approval names a human",
+      "pass": true,
+      "detail": "pm write rows=111, issues=111, unnamed approvals=0"
+    },
+    {
+      "id": "T31",
+      "category": "Integration",
+      "description": "Module hand-offs run without human copy-paste (logged)",
+      "pass": true,
+      "detail": "hand-offs [('change', 'reporting'), ('planning', 'risk'), ('reporting', 'critic'), ('risk', 'reporting')]"
+    },
+    {
+      "id": "T32",
+      "category": "Invention rate",
+      "description": "Share of sampled output claims not traceable to brief / pack / sponsor answers",
+      "pass": true,
+      "detail": "0/92 untraceable (0.0%)"
+    },
+    {
+      "id": "T33",
+      "category": "Re-run stability",
+      "description": "Two full runs on the same inputs give identical plan, register, gaps and report content",
+      "pass": true,
+      "detail": "gaps hash equal=True; new report versions on identical re-run=0"
+    },
+    {
+      "id": "T34",
+      "category": "Memory",
+      "description": "Frequency question answered with citation: how often the EDC meets (both sources)",
+      "pass": true,
+      "detail": "'How often does the EDC meet?' -> cites ['EDC-1.6', 'EDC-2.3']"
+    }
+  ]
+}

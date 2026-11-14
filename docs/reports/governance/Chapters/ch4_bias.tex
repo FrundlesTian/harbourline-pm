@@ -1,0 +1,54 @@
+\chapter{Bias and fairness check BIAS-1}
+\label{ch:bias}
+
+The governance agent runs a bias and fairness check, BIAS-1, on the resident consultation responses. It looks for skew by subgroup and by data-collection channel, the kind of bias assessment that AI risk management guidance asks for \parencite{nist2023airmf}.
+
+\section{Method}
+
+The method is implemented in \code{app/governance.py:43-107}:
+\begin{itemize}
+\item Tag each of the 214 consultation responses in \code{05_Resident_consultation_responses.csv} with themes, using a lexicon in English, Chinese, Malay and Tamil.
+\item Rank the themes three ways: by raw count, with each age band weighted equally, and with English-only responses.
+\item Report skew by channel, age and language.
+\end{itemize}
+
+\section{Findings}
+
+Table~\ref{tab:bias} lists the six findings recorded in \code{docs/governance/evidence/bias_check.json}. Figure~\ref{fig:bias} draws the response counts by age band and channel, and the raw and age-re-weighted ranks of the top four themes, from the same file.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Bias and fairness findings of BIAS-1}
+\label{tab:bias}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.7cm}>{\raggedright\arraybackslash}p{1.5cm}>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{ID} & \textbf{Severity} & \textbf{Finding} \\
+\midrule
+B1 & \textcolor{pmOrange}{\textbf{high}} & Online channel gave 160 of 214 responses, 74.8\%, and 115 of them came from under-45s. Seabreeze saw the same skew, LL-L06. \\
+B2 & \textcolor{pmOrange}{\textbf{high}} & Residents 65+ gave 25 responses, 11.7\%, although they are the main users of the active ageing centre; under-45s gave 121, 56.5\%. The estate's age profile is NOT FOUND in the pack, so true representativeness cannot be computed. \\
+B3 & \textcolor{pmOrange}{\textbf{high}} & All 19 non-English responses, zh 10, ms 6 and ta 3, came on paper or at the town hall, 18 of them from residents 45+. An English-only summary would drop 11 of 36 active-ageing comments and 6 of 37 lift/access comments. \\
+B4 & medium & Raw top four: Childcare, Communication \& trust, Lifts \& access, Active ageing. Age-re-weighted top four: Childcare, \textbf{Active ageing}, Lifts \& access, Communication \& trust. The order changes, so both must be reported. \\
+B5 & medium & Only 25 distinct comment texts across 214 responses; check for template or campaign submissions before weighting. \\
+B6 & low & Mean rating by age band ranges from 2.65 for 35--44 to 3.48 for 18--24. The town hall drew about 40 residents, EDC-4.5, and gave 31 responses. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\input{fig/bias_charts}
+
+\section{Actions proposed by the check}
+
+\begin{enumerate}
+\item Translate and include every non-English comment.
+\item Show raw and age-re-weighted priorities side by side.
+\item Run a second multilingual paper or door-to-door round for residents 55+; see LL-L06.
+\item Have Community Engagement confirm whether the repeated submissions are independent.
+\item Hold the consultation summary D15 until HC7.
+\end{enumerate}
+
+\section{Status and team decision}
+
+\paragraph*{Status.} The Supervisor account signed BIAS-1 off in the demonstration run; this is approval \#10 in Table~\ref{tab:approvals}. As noted in Section~\ref{sec:demoapprovals}, it is a demonstration decision, not the team's.
+
+\paragraph*{What the team changed as a result: the team's HC7 decision.} The team approved and carried out the proposed actions except the most critical one, action 3, the second multilingual paper / door-to-door round for residents 55+, which was not approved. So non-English comments are translated and included, action 1; raw and age-re-weighted priorities are shown side by side, action 2; repeated submissions are checked, action 4; and the summary D15 was held until HC7, action 5. \textbf{The under-representation of residents 65+, finding B2, therefore remains} and must be stated in the consultation summary.

@@ -1,0 +1,59 @@
+\chapter{Defects found by the evaluation and what changed}
+\label{ch:defects}
+
+Four LLM-mode runs were made on 14 November 2026. Their logs are in \code{docs/evaluation/evidence/}. Table~\ref{tab:runs} gives the result of each run, Figure~\ref{fig:runs} plots them, and Table~\ref{tab:defects} lists each defect or test-design problem with the change made.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\caption{The four LLM-mode runs of 14 November 2026}
+\label{tab:runs}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{1.4cm}>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Run} & \textbf{Result} & \textbf{What it showed} \\
+\midrule
+1, before fixes & 31/34 & Three real defects: T32 invention rate 6.9\%, T24 CF12 missing from UNRESOLVED, T27 no re-score proposed for CE-02 \\
+2 & 32/34 & The model's answer stopped after the scope, so planning fell back to the baseline; the uncached extra-gaps call then made T33 fail \\
+3 & 31/34 & T01 recall 77\%; T03 and T24 still assumed baseline counts and IDs \\
+Final & \textbf{34/34} & All fixes in place \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\input{fig/runs}
+\caption{Cases passed in each of the four LLM-mode runs of 14 November 2026, out of 34}
+\label{fig:runs}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\caption{Defects found by the evaluation and the change made for each}
+\label{tab:defects}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{1.6cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{1.8cm}>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Case} & \textbf{Cause} & \textbf{Real defect?} & \textbf{Change made} \\
+\midrule
+T32 & Generated risks stated figures that their cited sources do not hold, such as S\$18.5M, 1994 or a computed 30--51\% & \textcolor{pmOrange}{\textbf{Yes}} & Risk generation now asks that every figure come from a cited source; the Critic tracer checks description and trigger; one revision round, then untraceable risks are dropped and logged \\
+\addlinespace
+T24 & The generated change analysis did not name conflict CF12 & \textcolor{pmOrange}{\textbf{Yes}} & Detected conflicts that the event touches are always listed as UNRESOLVED \\
+\addlinespace
+T27 & The generated CE-02 analysis proposed no valid re-score & \textcolor{pmOrange}{\textbf{Yes}} & When affected risks exist but no valid re-score is proposed, the agent is asked once for re-scores only \\
+\addlinespace
+Run 2 & The scope and gaps answer lacked the Sponsor Question register & \textcolor{pmOrange}{\textbf{Yes}}, robustness & A missing register is requested once on its own before falling back \\
+\addlinespace
+T33 & The optional extra-gaps call was not cached, so a re-run produced different gaps & \textcolor{pmOrange}{\textbf{Yes}} & The call now uses the response cache \\
+\addlinespace
+L3, T34 & ``How often does the EDC meet?'' returned NOT FOUND although EDC-1.6 and EDC-2.3 answer it & \textcolor{pmOrange}{\textbf{Yes}} & Frequency questions are recognised; T34 added \\
+\addlinespace
+T03, T04, T24, T26, T27, T33 & Checks pinned baseline IDs, counts or mode & No: test design & Rewritten as behaviour checks, marked \dag\ in Chapter~\ref{ch:testcases} \\
+\addlinespace
+T01 & Recall varies between 77\% and 82\% & Model variance & Kept as limitation L1 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Fresh-database stability}
+Temperature 0 does not make DeepSeek repeat itself word for word: the final run's two fresh databases gave different plans, and board sizes in runs with a generated plan ranged from 102 to 114 items. Within one database the response cache makes re-runs identical, costs 0 tokens and keeps the HC2 and HC4 approvals valid. Baseline mode is the reproducible reference.

@@ -1,0 +1,86 @@
+\chapter{Coverage table, updated 14 November 2026}
+\label{app:coverage}
+
+Status: \textbf{Implemented} = code + run evidence in the repo; \textbf{Partial} = code exists but part of the requirement or its evidence is missing. Table~\ref{tab:coverage} maps each requirement of the brief to its evidence; Figure~\ref{fig:coverage} summarises the status counts.
+
+{\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.7cm}>{\raggedright\arraybackslash}p{3.1cm}>{\raggedright\arraybackslash}p{1.6cm}>{\raggedright\arraybackslash}p{2.0cm}>{\raggedright\arraybackslash}p{4.05cm}>{\raggedright\arraybackslash}p{3.4cm}@{}}
+\caption{Coverage of the brief's requirements}\label{tab:coverage}\\
+\toprule
+\textbf{\#} & \textbf{Requirement} & \textbf{Brief ref} & \textbf{Status} & \textbf{Evidence} & \textbf{Note} \\
+\midrule
+\endfirsthead
+\multicolumn{6}{@{}l}{\small\itshape Table~\thetable\ continued}\\
+\toprule
+\textbf{\#} & \textbf{Requirement} & \textbf{Brief ref} & \textbf{Status} & \textbf{Evidence} & \textbf{Note} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+1.1 & Scope statement + Sponsor Questions & L137-143 & Implemented & \code{app/planning.py:327-377}, \code{574-584}; T01 & LLM-mode recall 77--82\%, L1 \\
+1.2 & WBS to L3 + dictionary & L137-143 & Implemented & \code{app/planning.py:380-420}, \code{564-571}; T04: baseline 49 L3; LLM 61 L3 in the final run & \\
+1.3 & Milestones with dependencies & L137-143 & Implemented & \code{app/planning.py:435-474}, \code{595-605}; T05 & \\
+1.S & Traceable WBS; untraceable flagged & L137-140 & Implemented & \code{app/planning.py:518-536}; T03 & \\
+2.1 & Write WBS + milestones behind confirmation & L145-150 & Implemented & \code{app/pmtool.py:482-565}; T21, T22 on mock; Jira snapshot of \code{SCRUM} & 92 items on Jira; approval exports on the team machine \\
+2.2 & Board read back & L149-150 & Implemented & \code{app/pmtool.py:568-592}; T22 & Jira read-back run by the team, team statement \\
+2.S & Stable external keys & L145-148 & Implemented & \code{app/pmtool.py:37-38}, \code{452-479}; T22 & \\
+2.x & Approval bound to the diff & writer brief \S5 & Partial & \code{app/pmtool.py:501}, \code{528} & L2 \\
+3.1 & Answers with document + line citation & L152-155 & Implemented & \code{app/memory.py:100-139}, \code{app/sources.py:249-255}; T06--T09 & \\
+3.S1 & NOT FOUND when silent & L152-154 & Implemented & \code{app/memory.py:76-87}; T10--T13, T34 & L3 fixed \\
+3.S2 & Decisions carried across sessions & L154-155 & Implemented & \code{app/memory.py:142-154}, \code{app/pipeline.py:13}; T15 & \\
+4.1 & Scored register, owners, triggers, linked to work & L157-163 & Implemented & \code{app/risk.py:173-279}; T16 & \\
+4.2 & One what-if with cost + schedule & L160-163 & Implemented & \code{app/risk.py:301-381}; T17 & \\
+4.S1 & Three what-ifs compared & L157-158 & Partial & W1--W3 \code{app/risk.py:311-357} & No comparison output \\
+4.S2 & Automatic re-scoring & L158-159 & Partial & \code{app/change.py:150-151}, \code{app/risk.py:394-419}; T26 & Event-driven; applied after HC6 \\
+5.1 & Two reports from the same facts & L177-183 & Implemented & \code{app/reporting.py:161-288}; T18 & \\
+5.2 & Critic before a human; stop condition & L180-183 & Implemented & \code{app/critic.py:123-169}, \code{app/reporting.py:221-238}, \code{291-298}; T19, T20 & Revision loop max 3 \\
+5.S1 & Critic findings logged & L177 & Implemented & \code{app/reporting.py:231-233}, \code{285-287} & \\
+5.S2 & A report the Critic stopped & L178-179 & Implemented & \code{eval/faults.py}; T19, T28 & Planted faults \\
+6.1 & Detect the Week 12 change & L185-190 & Implemented & \code{app/change.py:236-245}; T24, T27 & Team's event is CE-01; team run on the demo machine, team statement \\
+6.2 & Show what is stale & L186-189 & Implemented & \code{app/change.py:248-282}; T24 & \\
+6.3 & Draft actions for a human & L189-190 & Implemented & \code{app/change.py:348-431}; T26 & \\
+6.S & Stale outputs refresh without re-run & L185-187 & Implemented, partial scope & \code{app/change.py:295-306}; T25 & WBS/milestones via HC6 \\
+G.1 & Named human checkpoints & L192-196 & Implemented & \code{app/audit.py:16-31}, \code{server.py:118-143} & HC1/HC4/HC7 record only, L4; approver is an account chosen without a password, L7 \\
+G.2 & Audit log of every agent write & L193-194 & Implemented & \code{app/audit.py:43-49}; T30 & Planning logs one summary row per run \\
+G.3 & Never delete/close/Done & L194-196 & Implemented & \code{app/pmtool.py:343-390}; T23 & Agents only. Link-direction fix disclosed; the human Reset demo deletes all project issues, L8 \\
+G.S & Bias and fairness check & L192-194 & Implemented, acted on & \code{app/governance.py:43-112}; T29 & HC7: all actions but the second consultation round \\
+I.1 & Hand-off without human copying & L199-200 & Implemented & \code{app/audit.py:52-57}; T31 & \\
+I.2 & Every approval point designed in & L200-201 & Implemented & Chapter~\ref{ch:checkpoints} & L4 \\
+R.1 & Free tiers only & L206-207 & Implemented, approved exception & \code{app/config.py:27-59}; baseline 0 tokens & Jira Free; DeepSeek is paid, accepted by the course instructor \\
+R.2 & One sandbox project & L245 & Implemented & \code{app/config.py:72}, \code{app/pmtool.py:319-320} & Project \code{SCRUM} on the team's own site \\
+R.3 & \code{ai-generated} label & L245-246 & Implemented & \code{app/pmtool.py:357-358}, \code{585} & \\
+R.4 & Personal tokens & L249-250 & Implemented & \code{app/audit.py:33-40}, \code{.gitignore}; history scan clean & Jira token and LLM keys are Tian Yujia's \\
+R.5 & Read path before write access & L251 & Implemented & \code{app/pmtool.py:482-501}, \code{528-531}, \code{599-612}, \code{scripts/jira_check.py} & Enforced: every write needs a preview, which reads first; see Chapter~\ref{ch:datacontract} \\
+R.6 & No Agent Builder / agent mode & L239-240 & Implemented & stdlib only & \\
+R.7 & Vendor-change risk logged & L240-241 & Implemented & \code{app/risk.py:104-106}, \code{228-234} & Week 12 re-check done, no change, team statement \\
+R.8 & Code orchestration tool & L229-230 & Note & Plain Python & Trade-off T2 \\
+\end{longtable}
+}
+
+\textbf{Counts, 37 rows:} 33 Implemented, including the ``partial scope'', ``acted on'' and ``approved exception'' variants; 3 Partial: 2.x, 4.S1 and 4.S2; 1 note. Planned 0, Missing 0. Since the 8 Nov version, 2.1, 2.2, 2.S, R.1, R.2 and R.5 moved to Implemented on the evidence of the Jira snapshot, the code-enforced read path and the team's statements of 14 Nov 2026.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    xbar, width=0.72\textwidth, height=4.2cm,
+    xmin=0, xmax=37, bar width=10pt,
+    symbolic y coords={Note,Partial,Implemented},
+    ytick={Implemented,Partial,Note}, y dir=reverse,
+    xlabel={Requirement rows, of 37},
+    nodes near coords, nodes near coords align={horizontal},
+    every node near coord/.append style={font=\small},
+    axis x line*=bottom, axis y line*=left,
+    tick label style={font=\small}, label style={font=\small},
+    enlarge y limits=0.3,
+    every axis plot/.append style={bar shift=0pt},
+]
+\addplot[fill=pmTeal, draw=pmTeal!70!black] coordinates {(33,Implemented)};
+\addplot[fill=pmOrange, draw=pmOrange!70!black] coordinates {(3,Partial)};
+\addplot[fill=pmGrey, draw=pmGrey!70!black] coordinates {(1,Note)};
+\end{axis}
+\end{tikzpicture}
+\caption{Coverage status counts from Table~\ref{tab:coverage}; ``Implemented'' includes the partial-scope, acted-on and approved-exception variants}
+\label{fig:coverage}
+\end{figure}

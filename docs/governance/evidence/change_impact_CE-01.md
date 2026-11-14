@@ -49,6 +49,9 @@ Event date 2027-04-06 · source: MA6094 Week 12 Guide - change event posted in c
 - CONFLICT CF12: the event says the variation was submitted at the March committee meeting; EDC 6.5 says 'to be raised' and KHB Report No.3 says 'To be submitted'. [CE-01, EDC-6.5, PR3-4]
 - Final variation value is not known (estimate range only). [PR3-4]
 - Programme float on the level 2 riser path: NOT FOUND. [PR3-3]
+- CONFLICT CF03 (Grant amount): Brief implies 60% of S$18.5M = S$11.1M (computed). NRF: 60% of ELIGIBLE cost, eligible capped at S$17.0M -> max S$10.2M; food court and rooftop amenity ineligible, so the real grant is lower still (element costs NOT FOUND). [BRIEF-p3-5, NRF-1.1, NRF-1.2, NRF-1.3, EDC-2.1]
+- CONFLICT CF04 (Budget headroom / contingency): S$18.5M - contract S$16.42M - fees S$0.90M = S$1.18M (computed; minutes say about S$1.18M). Not decided whether this is contingency. Asbestos estimate S$0.35-0.60M alone would use 30-51% of it. [BRIEF-p3-5, EDC-1.1, EDC-1.2, EDC-5.1]
+- CONFLICT CF07 (Hazardous materials): Seed register R08 'not expected per desk study', status Closed; asbestos (chrysotile) confirmed in L2 (EDC 6.5, PR3). D06 hazardous survey 'Not in original scope'. Seabreeze L03 recommended intrusive survey for pre-2000 buildings. [RISK-R08, EDC-5.1, EDC-6.5, PR3-3, DEL-D06, LL-L03]
 
 ## Actions awaiting HC6
 - CE-01-A01 risk_rescore -> R01 (applied)

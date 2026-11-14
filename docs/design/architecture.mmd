@@ -36,6 +36,7 @@ flowchart LR
 
     PM[("PM tool<br/>Jira Cloud REST v3<br/>or mock board (same contract)")]
     READERS["EDC and NRF readers"]
+    RESET["Reset demo (start screen, human)<br/>preview + typed project key<br/>outside the agents' guarded adapter"]
 
     PACK --> IDX --> FACTS
     CE --> CHG
@@ -67,6 +68,8 @@ flowchart LR
     GOV --> HC7
 
     AGENTS -. "every write" .-> LEDGER
+    RESET -->|"delete all project issues,<br/>restore baseline; audit_log kept"| PM
+    RESET -.-> LEDGER
 
     classDef hc fill:#fff4d6,stroke:#b07d00,color:#3d2c00
     classDef auto stroke-width:3px

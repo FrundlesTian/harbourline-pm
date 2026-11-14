@@ -1,0 +1,39 @@
+% Reset demo: preview -> typed confirmation -> re-check and delete deepest-first -> restore, with refusals
+\begin{tikzpicture}[
+    font=\footnotesize,
+    >={Stealth[length=2.2mm]},
+    stp/.style={rectangle, rounded corners=2pt, draw=hcLine, thick, dashed, fill=white,
+                 text width=7.0cm, align=left, inner sep=4pt},
+    person/.style={stp, solid, fill=hcFill},
+    refuse/.style={rectangle, rounded corners=2pt, draw=pmOrange, thick, fill=pmOrange!7,
+                   text width=4.6cm, align=left, inner sep=4pt},
+    okbox/.style={rectangle, rounded corners=2pt, draw=pmTeal, thick, fill=pmTeal!8,
+                 text width=7.0cm, align=left, inner sep=4pt},
+    flow/.style={->, thick, pmNavy!80!black},
+    no/.style={->, thick, pmOrange},
+    lab/.style={font=\scriptsize, inner sep=1pt},
+]
+\node[person] (start) at (0,0) {\textbf{Start screen}, before choosing an identity\\A person clicks \textbf{Reset demo}; reachable without a session, see \texttt{server.py:408-415}.};
+\node[stp, below=0.7cm of start] (prev) {\textbf{1. Preview} \texttt{GET /api/reset/preview}\\
+  Lists every issue in the configured Jira project: one project search plus the keys in \texttt{pm\_sync\_map}, so items missing from Jira's search index are included. The snapshot of site, project, Jira count, mock count and confirmation text is hashed into a reset \texttt{preview\_id}.};
+\node[person, below=0.7cm of prev] (conf) {\textbf{2. Confirm} \texttt{POST /api/reset/restore}\\
+  The person types the Jira project key, or \texttt{RESET} when only the mock board is configured.};
+\node[stp, below=0.7cm of conf] (del) {\textbf{3. Re-check and delete}\\
+  The issue list is fetched again and must match the preview exactly. Issues are deleted deepest-first with \texttt{deleteSubtasks=false}, so nothing is removed by cascade; each deletion is written to \texttt{audit\_log}.};
+\node[okbox, below=0.7cm of del] (rest) {\textbf{4. Restore}, only after all deletions succeed\\
+  Every demo table is cleared, including approvals, decisions, sessions and custom accounts; the four default accounts are seeded again; a baseline run without the LLM rebuilds the outputs. \texttt{audit\_log} is kept.};
+
+\node[refuse, right=0.9cm of conf] (r1) {\textbf{Refused by the server:}\\
+  missing or wrong confirmation $\rightarrow$ \textbf{400}\\
+  a second reset already running $\rightarrow$ \textbf{409}, \texttt{RESET\_LOCK}\\
+  snapshot \texttt{preview\_id} changed since the preview $\rightarrow$ \textbf{409}};
+\node[refuse, right=0.9cm of del] (r2) {\textbf{Stop on the first Jira error:}\\
+  the reset stops; the local data is \textbf{not} reset; the error reports how many issues were already deleted.};
+
+\draw[flow] (start) -- (prev);
+\draw[flow] (prev) -- (conf);
+\draw[flow] (conf) -- node[lab, right=2pt] {accepted} (del);
+\draw[flow] (del) -- node[lab, right=2pt] {all deletions succeeded} (rest);
+\draw[no] (conf.east) -- (r1.west);
+\draw[no] (del.east) -- (r2.west);
+\end{tikzpicture}

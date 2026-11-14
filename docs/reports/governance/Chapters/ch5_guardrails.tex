@@ -1,0 +1,47 @@
+\chapter{Guardrail events}
+\label{ch:guardrails}
+
+Guardrails are the code-level interlocks that stop an agent, or a person, from taking an action that the governance design does not allow. They work like the circuit breakers and safety interlocks of production systems: they refuse the action and leave a trace, rather than relying on the caller to behave \parencite{nygard2018}. Table~\ref{tab:guardrails} lists each guardrail with its evidence, including the two rows for the start-screen Reset demo added with the 11 Nov change. Figure~\ref{fig:reset} shows the safeguards of the Reset demo.
+
+{\small
+\setlength{\tabcolsep}{4pt}
+\begin{longtable}{>{\raggedright\arraybackslash}p{4.1cm}>{\raggedright\arraybackslash}p{\dimexpr\textwidth-4.1cm-4\tabcolsep\relax}}
+\caption{Guardrails and their evidence}\label{tab:guardrails}\\
+\toprule
+\textbf{Guardrail} & \textbf{Evidence} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{l}{\footnotesize\itshape Table~\ref{tab:guardrails} continued} \\
+\toprule
+\textbf{Guardrail} & \textbf{Evidence} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r}{\footnotesize\itshape continued on next page} \\
+\endfoot
+\bottomrule
+\endlastfoot
+Agents never delete, close or move to Done &
+Demonstration: close, delete and Done attempts on a board item were all blocked, audit \#148--150, each logged as \act{BLOCKED: …} with outcome \texttt{blocked}. Eval T23: 4/4 blocked. \\
+\texttt{ai-generated} label on every agent item &
+Enforced at create in \code{app/pmtool.py:357-358}; read-back reports unlabelled items, see \code{:531}. \\
+No PM write without HC2 + HC3 &
+Eval T21; \code{app/pmtool.py:485-486,528-531}. \\
+Change actions only after HC6 &
+15 actions drafted, 3 decided, 12 still pending in the demonstration. \\
+Unknown or unpermitted API call refused &
+Unknown paths default to the \code{users.manage} permission, see \code{server.py:370-378}; denied requests are logged \texttt{blocked}. Exception: the identity list and the Reset preview and restore requests are served before any session check, see \code{server.py:408-415}. \\
+Reset demo cannot run by accident &
+Needs a fresh preview, the typed project key, or \texttt{RESET} on the mock board, and a matching \code{preview_id}; one reset at a time, see \code{server.py:49-81}. Reset check: wrong confirmation $\rightarrow$ 400, stale preview $\rightarrow$ 409, valid reset $\rightarrow$ 200, recorded in \code{reset_check.json} and Appendix~\ref{app:reset}. \\
+Reset demo cannot half-reset &
+Jira issues are deleted deepest-first with \code{deleteSubtasks=false}, one audit row per deletion; the first Jira error stops the reset before any local data is cleared, see \code{app/pmtool.py:413-448}. \textcolor{pmOrange}{\textbf{Not yet exercised against Jira.}} \\
+Audit history survives a reset &
+Reset check: \code{audit_log} 140 $\rightarrow$ 166 rows; \code{approvals} 2 $\rightarrow$ 0 and \code{decisions} cleared, as designed in \code{app/pipeline.py:83-100}. \\
+Personal tokens never in shared files &
+\code{.env} is git-ignored; \code{.env.example} has no values; text is redacted before logging; no token is in the git history, see \S0.1 of \code{docs/design/00_inventory.md}. \\
+\end{longtable}
+}
+
+\input{fig/reset_flow}
+
+The Reset demo is a human path, not an agent path, and its residual risks are tracked as incident I-14 in Chapter~\ref{ch:incidents}: it deletes every issue in the configured Jira project, runs without a session, and clears the \code{approvals} and \code{decisions} tables.

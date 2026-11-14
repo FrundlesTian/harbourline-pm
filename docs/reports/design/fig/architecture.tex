@@ -1,0 +1,126 @@
+% Architecture of the Harbourline AI PM system (redrawn from docs/design/architecture.mmd)
+\begin{tikzpicture}[
+    font=\footnotesize,
+    >={Stealth[length=2.2mm]},
+    box/.style={rectangle, rounded corners=2pt, align=center, text width=3.05cm,
+                minimum height=1.0cm, inner sep=3pt},
+    agent/.style={box, draw=pmNavy, very thick, fill=white},
+    src/.style={box, draw=pmGrey, fill=pmLight},
+    store/.style={box, draw=pmBlue, fill=pmBlue!10},
+    llm/.style={box, draw=pmGrey, dashed, fill=white},
+    ext/.style={box, draw=pmTeal, thick, fill=pmTeal!8},
+    human/.style={box, draw=hcLine, dashed, thick, fill=white},
+    hcin/.style={align=center, text width=2.0cm, inner xsep=0pt, inner ysep=3pt,
+                 minimum height=0.95cm, font=\footnotesize},
+    flow/.style={->, thick, pmNavy!80!black},
+    hand/.style={->, line width=2.2pt, pmOrange},
+    dot/.style={->, densely dotted, thick, pmGrey!80!black},
+    resetline/.style={->, dashed, thick, hcLine},
+    lab/.style={font=\scriptsize, align=center, inner sep=1pt, fill=white},
+]
+% hexagonal human checkpoint: \hc{name}{position}{text}
+\newcommand{\hc}[3]{%
+  \node[hcin] (#1) at (#2) {#3};
+  \begin{scope}[on background layer]
+    \draw[fill=hcFill, draw=hcLine, thick]
+      ($(#1.west)+(-0.32,0)$) -- (#1.north west) -- (#1.north east) --
+      ($(#1.east)+(0.32,0)$) -- (#1.south east) -- (#1.south west) -- cycle;
+  \end{scope}
+  \coordinate (#1-w) at ($(#1.west)+(-0.32,0)$);
+  \coordinate (#1-e) at ($(#1.east)+(0.32,0)$);
+}
+
+% ---------- sources and fact store ----------
+\node[src]   (PACK)  at (0,0)      {\textbf{Data pack 00--07}\\brief + sponsor answers};
+\node[store] (IDX)   at (0,-2.5)   {\textbf{sources}: chunks with line ranges + BM25 index};
+\node[store] (FACTS) at (4.4,-2.5) {\textbf{facts F01--F78}\\quote verified in source};
+\node[src]   (CE)    at (0,-7.5)   {\textbf{Change events}\\CE-01 / CE-02 as JSON};
+
+% ---------- agents ----------
+\node[agent] (MEM)  at (0,-5)  {\textbf{3 Memory \& Retrieval}\\cited answers / NOT FOUND};
+\node[agent] (PLAN) at (4.4,-5)  {\textbf{1 Planning}\\scope, questions, conflicts, WBS, milestones};
+\node[agent] (RISK) at (8.8,-5)  {\textbf{4 Risk \& What-if}\\register, seed QA, W1--W3};
+\node[llm]   (LLM)  at (4.4,-7.5)  {\textbf{LLM client}\\Gemini, then DeepSeek; temp.\ 0, cached};
+\node[agent] (REP)  at (8.8,-7.5)  {\textbf{5 Reporting}\\EDC update + NRF report};
+\node[agent] (CRIT) at (13.2,-7.5) {\textbf{5 Critic}\\C1, C3--C8: PASS / STOP};
+\node[agent] (CHG)  at (4.4,-10)  {\textbf{6 Change}\\stale list, impact note, actions};
+\node[agent] (GOV)  at (8.8,-10)  {\textbf{Governance layer}\\bias \& fairness check B1--B6};
+\node[agent] (TOOL) at (13.2,-2.5) {\textbf{2 Tool Integration}\\preview, apply, read-back};
+
+% ---------- checkpoints ----------
+\hc{HC1}{8.8,0}{\textbf{HC1} scope + Sponsor Questions}
+\hc{HC2}{8.8,-2.5}{\textbf{HC2} plan baseline, plan\_hash}
+\hc{HC3}{17.6,-2.5}{\textbf{HC3} PM write, preview\_id}
+\hc{HC4}{13.2,-5}{\textbf{HC4} risk register, risk\_hash}
+\hc{HC5}{17.6,-7.5}{\textbf{HC5} report release}
+\hc{HC6}{4.4,-12.5}{\textbf{HC6} change actions}
+\hc{HC7}{13.2,-10}{\textbf{HC7} bias sign-off}
+
+% ---------- outputs, ledger, reset ----------
+\node[ext]   (PM)     at (17.6,-5) {\textbf{PM tool}\\Jira Cloud REST v3 or mock board, same contract};
+\node[ext]   (READ)   at (17.6,-10) {\textbf{EDC and NRF readers}};
+\node[store] (LEDGER) at (8.8,-12.5)   {\textbf{Ledger}, SQLite\\audit\_log, approvals, handoffs, runs, kv};
+\node[human] (RESET)  at (13.2,-12.5)  {\textbf{Reset demo}\\start screen, human; typed project key};
+
+% frame around the fact store
+\begin{scope}[on background layer]
+  \node[draw=pmBlue, dashed, rounded corners=4pt, fit=(IDX)(FACTS), inner sep=5pt,
+        label={[font=\scriptsize\itshape, text=pmBlue!70!black, anchor=south west, inner sep=2pt, yshift=3pt]north west:Fact store: SQLite, app/db.py}] {};
+\end{scope}
+
+% ---------- data flow ----------
+\draw[flow] (PACK) -- (IDX);
+\draw[flow] (IDX) -- (FACTS);
+\draw[flow] (IDX) -- (MEM);
+\draw[flow] (IDX.south east) -- (PLAN.north west);
+\draw[flow] (FACTS) -- (PLAN);
+\draw[flow] (CE.south east) -- (CHG.north west);
+
+% ---------- automatic hand-offs (thick) ----------
+\draw[hand] (PLAN) -- (RISK);
+\draw[hand] (RISK) -- (REP);
+\draw[hand] ([yshift=2.5mm]REP.east) -- ([yshift=2.5mm]CRIT.west);
+\draw[dot]  ([yshift=-2.5mm]CRIT.west) -- node[lab, below=1pt, fill=none] {STOP:\\$\le$3 rev.} ([yshift=-2.5mm]REP.east);
+\draw[hand] (CHG.north east) -- (REP.south west);
+\draw[flow] (GOV) -- (REP);
+
+% ---------- LLM calls (dotted) ----------
+\draw[dot] (MEM.south east) -- (LLM.north west);
+\draw[dot] (PLAN) -- (LLM);
+\draw[dot] (RISK.south west) -- (LLM.north east);
+\draw[dot] (REP) -- (LLM);
+\draw[dot] (CHG) -- (LLM);
+
+% ---------- checkpoints and PM tool ----------
+\draw[flow] ([xshift=10mm]PLAN.north) -- (HC1.south west);
+\draw[flow] (PLAN.north east) -- (HC2.south west);
+\draw[flow] (HC2-e) -- (TOOL);
+\draw[flow] (TOOL) -- (HC3-w);
+\draw[flow] (HC3) -- (PM);
+\draw[flow] (PM.north west) -- node[lab, below left=0pt, fill=none] {read-back} (TOOL.south east);
+\draw[flow] (RISK) -- (HC4-w);
+\draw[flow] (CRIT) -- node[lab, above=1pt, fill=none] {PASS only} (HC5-w);
+\draw[flow] (HC5) -- (READ);
+\draw[flow] (CHG) -- (HC6);
+\draw[flow] (HC6.south) -- ++(0,-1.0) -| (20.9,-4.75) -- ([yshift=2.5mm]PM.east);
+\node[lab, fill=none, anchor=north west] at (4.6,-14.05)
+   {re-score, milestone note, assumption update, PM comment + label, after HC6 approval};
+\draw[flow] (GOV) -- (HC7-w);
+
+% ---------- ledger and reset (human maintenance, outside the agents' guarded adapter) ----------
+\draw[dot] (GOV) -- node[lab, anchor=west, xshift=3pt, fill=none] {every agent\\write} (LEDGER);
+\draw[resetline] (RESET.east) -- (20.2,-12.5) |- ([yshift=-2.5mm]PM.east);
+\node[lab, fill=none, anchor=south, text=hcLine!80!black] at (17.4,-12.45) {delete all project issues,\\restore baseline; audit\_log kept};
+\draw[resetline] (RESET) -- (LEDGER);
+
+% ---------- legend ----------
+\begin{scope}[shift={(-1.5,-10.4)}, font=\scriptsize]
+  \draw[hand] (0,0) -- (0.8,0); \node[anchor=west] at (0.9,0) {automatic hand-off, logged};
+  \draw[flow] (0,-0.45) -- (0.8,-0.45); \node[anchor=west] at (0.9,-0.45) {data / control flow};
+  \draw[dot] (0,-0.9) -- (0.8,-0.9); \node[anchor=west] at (0.9,-0.9) {LLM call, revision, log};
+  \draw[resetline] (0,-1.35) -- (0.8,-1.35); \node[anchor=west] at (0.9,-1.35) {human maintenance};
+  \draw[fill=hcFill, draw=hcLine, thick] (0,-1.8) -- (0.15,-1.65) -- (0.65,-1.65) -- (0.8,-1.8) -- (0.65,-1.95) -- (0.15,-1.95) -- cycle;
+  \node[anchor=west] at (0.9,-1.8) {human checkpoint};
+  \draw[pmNavy, very thick, rounded corners=1pt] (0,-2.37) rectangle (0.8,-2.13); \node[anchor=west] at (0.9,-2.25) {agent};
+\end{scope}
+\end{tikzpicture}

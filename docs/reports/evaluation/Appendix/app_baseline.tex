@@ -1,0 +1,71 @@
+% Generated from eval/results/latest.md, baseline run 2026-11-14T18:01:15+08:00, LLM off.
+This appendix reproduces the output of the baseline run of 14 November 2026 at 18:01 SGT, with the LLM off, as recorded in \code{eval/results/latest.md}. The machine-readable form is \code{eval/results/latest.json}.
+
+\section{Five measures as recorded}
+\begin{enumerate}
+  \item Gap recall: 91\%, 20 of 22; missed: G20 Is $\sim$100 childcare places a fixed requirement given demand; G21 Permitted working hours / noise limits while the Hub is open.
+  \item Invention rate: 0.0\%; 0 of 75 sampled claims untraceable.
+  \item Re-run stability: fresh-database results identical for plan, risk, gaps and reports; PM second sync: 0 created, 0 updated, 92 unchanged; duplicates: none.
+  \item Critic catch rate: 100\%, 21 of 21.
+  \item Cost and time per full run: 0.055\,s, 0 tokens, US\$0.0.
+\end{enumerate}
+Result: \textbf{34 of 34 test cases passed.}
+
+\section{Per-case details}
+Table~\ref{tab:appcases} lists every case with the harness's category, description, result and detail. The text is reproduced verbatim from \code{eval/results/latest.md}, where the harness cuts each detail at 160 characters and replaces any vertical bar with a slash; the five details cut in this way are marked [\ldots]. Untruncated detail is in \code{eval/results/latest.json}. In both appendices the T05 description is shortened by one status word.
+
+{\footnotesize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.75cm}>{\raggedright\arraybackslash}p{1.9cm}>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}p{1.0cm}>{\raggedright\arraybackslash}p{6.9cm}@{}}
+\caption{Per-case details of the baseline run of 14 November 2026}\label{tab:appcases}\\
+\toprule
+\textbf{ID} & \textbf{Category} & \textbf{Description} & \textbf{Result} & \textbf{Detail} \\
+\midrule
+\endfirsthead
+\multicolumn{5}{@{}l}{\small\itshape Table~\thetable\ continued} \\
+\toprule
+\textbf{ID} & \textbf{Category} & \textbf{Description} & \textbf{Result} & \textbf{Detail} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{5}{r@{}}{\small\itshape continued on next page} \\
+\endfoot
+\bottomrule
+\endlastfoot
+T01 & Gap recall & System surfaces the brief's open questions unprompted (gold list, keyword match) & \textbf{PASS} & {\ttfamily recall 0.91 (20/\allowbreak{}22); missed: ['G20 Is \textasciitilde{}100 childcare places a fixed requirement given demand',\allowbreak{} 'G21 Permitted working hours /\allowbreak{} noise limits while the Hub is open} [\ldots] \\
+T02 & Planning & Contradictions in the brief are detected and cite all sources & \textbf{PASS} & {\ttfamily conflicts ['CF01',\allowbreak{} 'CF02',\allowbreak{} 'CF03',\allowbreak{} 'CF04',\allowbreak{} 'CF05',\allowbreak{} 'CF06',\allowbreak{} 'CF07',\allowbreak{} 'CF08',\allowbreak{} 'CF09',\allowbreak{} 'CF10',\allowbreak{} 'CF11',\allowbreak{} 'CF12']} \\
+T03 & Planning & Every kept WBS element traces to a scope line; untraceable candidates are flagged, not kept & \textbf{PASS} & {\ttfamily untraced kept=\allowbreak{}[]; flagged=\allowbreak{}['Tender the design-and-build contract',\allowbreak{} 'Fundraising campaign for the 40\% balance',\allowbreak{} 'Relocate the tuition centre to a temporary site'} [\ldots] \\
+T04 & Planning & WBS reaches Level 3 with dictionary and owner; unassigned owners are visible & \textbf{PASS} & {\ttfamily L3=\allowbreak{}49 unassigned=\allowbreak{}['3.2.3',\allowbreak{} '6.2.1']} \\
+T05 & Planning & Milestone dependencies are valid; undated milestones say NOT FOUND rather than inventing & \textbf{PASS} & {\ttfamily dependency issues=\allowbreak{}[]; undated=\allowbreak{}['MS06',\allowbreak{} 'MS08',\allowbreak{} 'MS11',\allowbreak{} 'MS12',\allowbreak{} 'MS15',\allowbreak{} 'MS16',\allowbreak{} 'MS18']} \\
+T06 & Memory & Answers with document+line citation: approved budget & \textbf{PASS} & {\ttfamily 'What is the approved budget?' $\rightarrow$ cites ['BRIEF-p3-5',\allowbreak{} 'EDC-1.2']} \\
+T07 & Memory & Answers with citation: maximum grant & \textbf{PASS} & {\ttfamily 'What is the maximum grant?' $\rightarrow$ cites ['NRF-1.2',\allowbreak{} 'NRF-1.1']} \\
+T08 & Memory & Answers with citation: asbestos removal estimate & \textbf{PASS} & {\ttfamily 'How much is the asbestos removal estimate?' $\rightarrow$ cites ['EDC-5.1',\allowbreak{} 'PR3-3',\allowbreak{} 'EDC-6.5']} \\
+T09 & Memory & Answers with citation: who appoints the AAC operator & \textbf{PASS} & {\ttfamily 'Who appoints the active ageing centre operator?' $\rightarrow$ cites ['SA-Q2']} \\
+T10 & Memory & NOT FOUND: energy performance target & \textbf{PASS} & {\ttfamily 'What is the energy performance target?' $\rightarrow$ NOT FOUND (only 66\% of the question's key terms appear in the best passages)} \\
+T11 & Memory & NOT FOUND: cost of the rooftop garden & \textbf{PASS} & {\ttfamily 'How much will the rooftop garden cost?' $\rightarrow$ NOT FOUND (the question asks for a value,\allowbreak{} date or quantity but no matching passage states one)} \\
+T12 & Memory & NOT FOUND: contractor insurance policy number & \textbf{PASS} & {\ttfamily "What is the contractor's insurance policy number?" $\rightarrow$ NOT FOUND (only 50\% of the question's key terms appear in the best passages)} \\
+T13 & Memory & NOT FOUND: resident satisfaction target & \textbf{PASS} & {\ttfamily 'What is the resident satisfaction target?' $\rightarrow$ NOT FOUND (only 66\% of the question's key terms appear in the best passages)} \\
+T14 & Memory & Conflicting sources are named, not silently resolved (practical completion) & \textbf{PASS} & {\ttfamily cites ['DEL-D22',\allowbreak{} 'EDC-4.1',\allowbreak{} 'NRF-4.2'],\allowbreak{} conflicts ['CF01']} \\
+T15 & Memory & A human decision is carried forward into a later session & \textbf{PASS} & {\ttfamily cites ['DL-001',\allowbreak{} 'EDC-6.3']} \\
+T16 & Risk & Register: every risk scored, owned, triggered, linked to WBS and sourced; seed QA finds known defects & \textbf{PASS} & {\ttfamily 22 risks,\allowbreak{} defects=\allowbreak{}[]; seed QA ok=\allowbreak{}True} \\
+T17 & Risk & What-if W1 computes cost/schedule impact with stated assumptions & \textbf{PASS} & {\ttfamily result=\allowbreak{}\{'cost\_SGD\_M': [0.35,\allowbreak{} 0.6],\allowbreak{} 'council\_exposure\_SGD\_M': [0.14,\allowbreak{} 0.6],\allowbreak{} 'delay\_weeks': [4,\allowbreak{} 6],\allowbreak{} 'headroom\_left\_SGD\_M': [0.58,\allowbreak{} 0.83],\allowbreak{} 'needs\_NRF\_4.2\_approval': } [\ldots] \\
+T18 & Reporting & Both reports from the same fact store pass the Critic when clean & \textbf{PASS} & {\ttfamily [('EDC-2027-03-31-v1',\allowbreak{} 'critic\_passed'),\allowbreak{} ('NRF-2027-03-31-v1',\allowbreak{} 'critic\_passed')]} \\
+T19 & Critic catch rate & Planted faults are stopped by the Critic & \textbf{PASS} & {\ttfamily 21/\allowbreak{}21: } \\
+T20 & Governance & A Critic-stopped report cannot be released (HC5 refuses) & \textbf{PASS} & {\ttfamily Report status is critic\_stopped: only Critic-passed drafts can be released} \\
+T21 & Tool integration & No PM write without HC2 + HC3; preview is read-only & \textbf{PASS} & {\ttfamily preview=\allowbreak{}HC2 (plan baseline) not approved yet,\allowbreak{} apply=\allowbreak{}\{'ok': False,\allowbreak{} 'reason': 'HC3 approval for this preview is missing'\}} \\
+T22 & Re-run stability & Second sync with the same plan updates nothing and creates no duplicates & \textbf{PASS} & {\ttfamily first=\allowbreak{}\{'created': 92,\allowbreak{} 'updated': 0,\allowbreak{} 'unchanged': 0\} second=\allowbreak{}\{'created': 0,\allowbreak{} 'updated': 0,\allowbreak{} 'unchanged': 92\} readback verified=\allowbreak{}True} \\
+T23 & Governance & Agents cannot delete, close or move to Done; attempts are logged as BLOCKED & \textbf{PASS} & {\ttfamily blocked 4/\allowbreak{}4,\allowbreak{} audit rows 6} \\
+T24 & Change & CE-01: stale plan/register/reports detected, cost/time cited, CF12 conflict and decisions raised, actions pending & \textbf{PASS} & {\ttfamily stale=\allowbreak{}[('milestone',\allowbreak{} 'MS11'),\allowbreak{} ('report',\allowbreak{} 'EDC-2027-03-31-v1'),\allowbreak{} ('report',\allowbreak{} 'NRF-2027-03-31-v1'),\allowbreak{} ('risk',\allowbreak{} 'R01'),\allowbreak{} ('risk',\allowbreak{} 'R08'),\allowbreak{} ('risk',\allowbreak{} 'R18'),\allowbreak{} ('risk',\allowbreak{} 'R22} [\ldots] \\
+T25 & Change & Stale reports refresh automatically (new version cites the event and passes the Critic) & \textbf{PASS} & {\ttfamily [('EDC-2027-03-31-v2',\allowbreak{} 'critic\_passed'),\allowbreak{} ('NRF-2027-03-31-v2',\allowbreak{} 'critic\_passed')]} \\
+T26 & Change & Nothing changes until HC6; after approval the risk is re-scored and reports refresh again & \textbf{PASS} & {\ttfamily R01 20$\rightarrow$20 (pending) $\rightarrow$25 (approved,\allowbreak{} proposed 25); live reports ['EDC-2027-03-31-v3',\allowbreak{} 'NRF-2027-03-31-v3']} \\
+T27 & Change & CE-02: re-scores proposed for existing risks, affected and downstream milestones identified & \textbf{PASS} & {\ttfamily rescore=\allowbreak{}['R06',\allowbreak{} 'R17',\allowbreak{} 'R21'] ms=\allowbreak{}['MS08',\allowbreak{} 'MS10',\allowbreak{} 'MS11',\allowbreak{} 'MS12'] downstream=\allowbreak{}['MS14',\allowbreak{} 'MS15',\allowbreak{} 'MS16',\allowbreak{} 'MS18']} \\
+T28 & Change & A Critic STOPs a post-event draft that ignores the change event & \textbf{PASS} & {\ttfamily critic\_stopped} \\
+T29 & Governance & Bias \& fairness check flags senior under-representation and English-only loss; HC7 pending & \textbf{PASS} & {\ttfamily raw=\allowbreak{}['Childcare',\allowbreak{} 'Communication \& trust',\allowbreak{} 'Lifts \& barrier-free access',\allowbreak{} 'Active ageing /\allowbreak{} seniors'] reweighted=\allowbreak{}['Childcare',\allowbreak{} 'Active ageing /\allowbreak{} seniors',\allowbreak{} 'Lifts } [\ldots] \\
+T30 & Governance & Audit trail: every PM write has an audit row; every approval names a human & \textbf{PASS} & {\ttfamily pm write rows=\allowbreak{}92,\allowbreak{} issues=\allowbreak{}92,\allowbreak{} unnamed approvals=\allowbreak{}0} \\
+T31 & Integration & Module hand-offs run without human copy-paste (logged) & \textbf{PASS} & {\ttfamily hand-offs [('change',\allowbreak{} 'reporting'),\allowbreak{} ('planning',\allowbreak{} 'risk'),\allowbreak{} ('reporting',\allowbreak{} 'critic'),\allowbreak{} ('risk',\allowbreak{} 'reporting')]} \\
+T32 & Invention rate & Share of sampled output claims not traceable to brief / pack / sponsor answers & \textbf{PASS} & {\ttfamily 0/\allowbreak{}75 untraceable (0.0\%)} \\
+T33 & Re-run stability & Two full runs on the same inputs give identical plan, register, gaps and report content & \textbf{PASS} & {\ttfamily gaps hash equal=\allowbreak{}True; new report versions on identical re-run=\allowbreak{}0} \\
+T34 & Memory & Frequency question answered with citation: how often the EDC meets (both sources) & \textbf{PASS} & {\ttfamily 'How often does the EDC meet?' $\rightarrow$ cites ['EDC-1.6',\allowbreak{} 'EDC-2.3']} \\
+\end{longtable}
+}

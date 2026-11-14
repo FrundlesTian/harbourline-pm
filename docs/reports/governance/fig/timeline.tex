@@ -1,0 +1,52 @@
+% Figure: demonstration run timeline (source: audit_log.csv, approvals.csv, summary.json)
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  font=\scriptsize,
+  >={Stealth[length=2mm]},
+  box/.style={draw=pmNavy, fill=pmLight, rounded corners=2pt, align=center,
+              text width=2.35cm, minimum height=1.25cm, inner sep=2pt, line width=0.6pt},
+  hc/.style={box, draw=hcLine, fill=hcFill, line width=0.9pt},
+  refused/.style={draw=pmOrange, dashed, fill=white, rounded corners=2pt, align=center,
+              text width=2.35cm, inner sep=2pt, text=pmOrange!80!black, line width=0.7pt},
+  flow/.style={->, draw=pmNavy, line width=0.7pt},
+  rlink/.style={draw=pmOrange, dashed, line width=0.6pt, -{Stealth[length=1.6mm]}},
+  node distance=0.62cm
+]
+% Row 1
+\node[box] (run) {\textbf{Pipeline run}\\baseline, mock board\\audit \#6--25};
+\node[hc, right=of run] (hc1) {\textbf{HC1} scope +\\Sponsor Questions\\\#27 approved};
+\node[hc, right=of hc1] (hc2) {\textbf{HC2} plan baseline\\\#28 approved};
+\node[hc, right=of hc2] (hc3) {\textbf{HC3} PM write\\\#30 approved\\sync \#141: \textbf{92 created}};
+\node[hc, right=of hc3] (hc3b) {\textbf{HC3} re-sync\\\#144 approved; sync \#145:\\0 / 0 / \textbf{92 unchanged}};
+% Row 2
+\node[hc, below=2.35cm of run] (hc4) {\textbf{HC4} risk register\\\#147 approved};
+\node[hc, right=of hc4] (hc5) {\textbf{HC5} report release\\EDC-2027-03-31-v1\\\#152 approved};
+\node[box, right=of hc5] (ce) {\textbf{CE-01} change event\\8 stale, 15 actions\\\#153--173};
+\node[hc, right=of ce] (hc6) {\textbf{HC6} actions\\2 approved, 1 rejected\\12 pending; \#174--187};
+\node[hc, right=of hc6] (hc7) {\textbf{HC7} bias sign-off\\BIAS-1\\\#188 approved};
+% Flow
+\draw[flow] (run) -- (hc1);
+\draw[flow] (hc1) -- (hc2);
+\draw[flow] (hc2) -- (hc3);
+\draw[flow] (hc3) -- (hc3b);
+\draw[flow] (hc3b.south) -- ++(0,-0.55) -| (hc4.north);
+\draw[flow] (hc4) -- (hc5);
+\draw[flow] (hc5) -- (ce);
+\draw[flow] (ce) -- (hc6);
+\draw[flow] (hc6) -- (hc7);
+% Refused attempts
+\node[refused, above=0.55cm of hc2] (r1) {\xmark\ Group Leader tries HC2\\\texttt{access denied}, \#26};
+\draw[rlink] (r1) -- (hc2);
+\node[refused, below=0.6cm of hc4, xshift=1.48cm] (r2) {\xmark\ Agent close, delete, Done on a board item: blocked, \#148--150};
+\draw[rlink] (r2.north) -- ++(0,0.3) -| ($(hc4.east)!0.5!(hc5.west)$);
+\node[refused, right=0.62cm of r2] (r3) {\xmark\ Release of \texttt{critic\_stopped} NRF draft refused, \#151};
+\draw[rlink] (r3.north) -- (r3.north |- hc5.south);
+% Legend
+\node[hc, text width=1.4cm, minimum height=0.45cm, below=0.5cm of r3, xshift=2.4cm] (lg1) {checkpoint};
+\node[box, text width=1.4cm, minimum height=0.45cm, right=0.3cm of lg1] (lg2) {agent step};
+\node[refused, text width=1.6cm, right=0.3cm of lg2] (lg3) {\xmark\ refused};
+\end{tikzpicture}
+\caption[Demonstration run: checkpoints and refused attempts]{Demonstration run in the order of the audit log. Yellow boxes are human checkpoints, with approvals signed by seeded role accounts; dashed orange boxes are attempts refused and logged with outcome \texttt{blocked}. The HC3 re-sync shows created / updated / unchanged. Source: \texttt{audit\_log.csv}, \texttt{approvals.csv}, \texttt{summary.json}.}
+\label{fig:timeline}
+\end{figure}

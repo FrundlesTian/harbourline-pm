@@ -1,0 +1,30 @@
+% Planted faults of T19 by targeted Critic rule (from eval/faults.py and the fault table):
+% C1: wrong_number, invented_figure, missing_citation, wrong_date, invented_person, bad_calc (x2 reports)
+% C3: drop_section; C4: wrong_top5; C6: status_spin; C7: remove_conflicts (x2 reports); C8: hidden_gap (NRF only)
+\begin{tikzpicture}
+\begin{axis}[
+  xbar stacked, bar width=11pt,
+  width=0.8\textwidth, height=5.6cm,
+  xmin=0, xmax=14,
+  xlabel={Planted faults stopped}, ylabel={Critic rule},
+  symbolic y coords={C8,C7,C6,C4,C3,C1},
+  ytick=data,
+  y tick label style={font=\small},
+  xtick={0,2,...,14},
+  x tick label style={font=\small},
+  legend style={at={(0.98,0.05)}, anchor=south east, font=\small},
+  axis lines*=left,
+  xmajorgrids, grid style={pmLight},
+  enlarge y limits=0.12,
+]
+\addplot[fill=pmNavy, draw=pmNavy] coordinates {(6,C1) (1,C3) (1,C4) (1,C6) (1,C7) (0,C8)};
+\addplot[fill=pmBlue, draw=pmBlue] coordinates {(6,C1) (1,C3) (1,C4) (1,C6) (1,C7) (1,C8)};
+\legend{EDC report, NRF report}
+\node[anchor=west, font=\small] at (axis cs:12,C1) {12/12};
+\node[anchor=west, font=\small] at (axis cs:2,C3) {2/2};
+\node[anchor=west, font=\small] at (axis cs:2,C4) {2/2};
+\node[anchor=west, font=\small] at (axis cs:2,C6) {2/2};
+\node[anchor=west, font=\small] at (axis cs:2,C7) {2/2};
+\node[anchor=west, font=\small] at (axis cs:1,C8) {1/1};
+\end{axis}
+\end{tikzpicture}

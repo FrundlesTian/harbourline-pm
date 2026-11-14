@@ -1,0 +1,38 @@
+\chapter{Agent prompts: Role and Context as stored}
+\label{app:prompts}
+
+The source is \code{app/agents.py}. No tokens appear in any prompt.
+
+\textbf{Shared grounding text}, in \code{app/agents.py:4-7}: ``You may ONLY use the SOURCES given in the user message. Never use outside knowledge. If the sources do not contain the answer, say exactly NOT FOUND. Every claim must carry a citation in square brackets using the source id, e.g.\ [EDC-5.1]. When sources conflict, say so and cite both.''
+
+\textbf{Generation grounding}, in \code{app/gen.py:73-76}: ``Use ONLY the SOURCES given. Never use outside knowledge or invent names, dates, amounts or owners. Every source id you output must be one of the ids shown in square brackets. If the sources do not state something, write NOT FOUND [\ldots] instead of guessing. Where sources disagree, say so and cite both. Return a single JSON object only.''
+
+Table~\ref{tab:prompts} gives the Role, Context and system prompt of each agent.
+
+{\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{2.0cm}>{\raggedright\arraybackslash}p{3.4cm}>{\raggedright\arraybackslash}p{4.0cm}>{\raggedright\arraybackslash}p{5.6cm}@{}}
+\caption{Agent prompts: Role, Context and system prompt}\label{tab:prompts}\\
+\toprule
+\textbf{Agent} & \textbf{Role} & \textbf{Context} & \textbf{System prompt} \\
+\midrule
+\endfirsthead
+\multicolumn{4}{@{}l}{\small\itshape Table~\thetable\ continued}\\
+\toprule
+\textbf{Agent} & \textbf{Role} & \textbf{Context} & \textbf{System prompt} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Planning & Project planner for the Harbourline Community Hub Refurbishment. & Brief + Sponsor Answers Round 1 + data pack only. Relative time until the sponsor gives dates. & ``You are the Planning Agent. '' + grounding; generation: ``You are the Planning Agent for the Harbourline Community Hub Refurbishment. '' + generation grounding, \code{app/planning.py:323-324} \\
+Tool Integration & Writes the approved plan into the PM tool and reads it back. & Approved WBS/milestones only, from HC2. One sandbox project. Label ai-generated. Stable external keys. & ``Deterministic agent - no LLM.'' \\
+Memory \& Retrieval & Answers questions over the pack with document + line citations. & BM25 retrieval over chunks; human-approved decisions are carried forward between sessions. & ``You are the Memory Agent for the Harbourline project. '' + grounding + `` Answer in at most 4 sentences.'' \\
+Risk \& What-if & Maintains the scored risk register and runs what-if scenarios. & Seed register of 2025 + pack evidence + WBS handed off from Planning. & ``You are the Risk \& What-if Agent. '' + grounding; generation prompt \code{app/risk.py:180-202} \\
+Reporting & Drafts the weekly EDC exception update and the monthly NRF progress report from ONE fact sheet. & Fact store + risk register + tranche conditions. Audience-fit: EDC = one-page exception report, L07; NRF = clause 3.2 contents. & Summary: ``You are the Reporting Agent. Rewrite the given bullet facts into a short executive summary. Do not add any number, date, name or claim that is not in the bullets. Keep the [F..] fact tags.'' Generation prompt with drafting rules: \code{app/reporting.py:167-192} \\
+Critic & Checks every draft before a human sees it. & Fact store, risk register, required report contents, stale-fact list. & ``Deterministic agent - no LLM.'' \\
+Change & Responds to the Week 12 change event. & Event text, dated and numbered, + every stored output's tags. & ``You are the Change Agent. '' + grounding; analysis prompt \code{app/change.py:130-158} \\
+Governance & Audit log, checkpoints, guardrails, bias and fairness check. & All agent writes; consultation CSV. & ``Deterministic.'' \\
+\end{longtable}
+}
+
+The UI translation helper in \code{app/translation.py} has its own display-only prompt and never feeds an agent.

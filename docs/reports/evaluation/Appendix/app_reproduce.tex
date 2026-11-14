@@ -1,0 +1,19 @@
+The commands of Chapter~\ref{ch:reproduce} are repeated here for convenience. The baseline command writes \code{eval/results/latest.md} and \code{eval/results/latest.json}. The LLM-mode command uses the configured provider chain; on the evaluation machine every call went to DeepSeek, as Chapter~\ref{ch:setup} explains. Jira is used by the harness only with \code{--jira}, which was not used for this report.
+
+\begin{lstlisting}[numbers=none]
+python3 eval/run_eval.py --no-llm        # baseline, about 1 s, writes eval/results/latest.*
+python3 eval/run_eval.py                 # LLM mode, a few minutes and about US$0.03
+python3 scripts/governance_demo.py       # demonstration run and exports for the Governance Log
+python3 scripts/reset_check.py           # Reset demo check on the mock board, no Jira
+\end{lstlisting}
+
+\noindent Evidence used in this report:
+\begin{itemize}
+  \item Baseline run: \code{eval/results/latest.md} and \code{eval/results/latest.json}, 14 November 2026.
+  \item Final LLM-mode run: \code{docs/evaluation/evidence/llm_results_2026-11-14.md}, \code{llm_results_2026-11-14.json} and \code{eval_llm_deepseek_2026-11-14_final.log}.
+  \item Earlier LLM-mode runs: \code{eval_llm_deepseek_2026-11-14_run1_before_fixes.log} and \code{eval_llm_deepseek_2026-11-14_run3.log} in the same folder.
+  \item Ground truth and faults: \code{eval/gold_gaps.json}, \code{eval/faults.py}.
+  \item Change event CE-01: \code{docs/governance/evidence/change_impact_CE-01.md}.
+  \item Reset demo check: \code{scripts/reset_check.py}, with evidence in \code{docs/governance/evidence/reset_check.json}.
+  \item Jira snapshot: \code{docs/governance/evidence/jira_snapshot_2026-11-14.json}.
+\end{itemize}

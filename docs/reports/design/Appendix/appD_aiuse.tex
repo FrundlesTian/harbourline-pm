@@ -1,0 +1,30 @@
+\chapter{AI-use declaration}
+\label{app:aiuse}
+
+Table~\ref{tab:aiuse} declares, for each deliverable, which AI tools were used, what they produced and how people reviewed it.
+
+{\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{3.6cm}>{\raggedright\arraybackslash}p{6.6cm}>{\raggedright\arraybackslash}p{5.0cm}@{}}
+\caption{AI-use declaration}\label{tab:aiuse}\\
+\toprule
+\textbf{Deliverable} & \textbf{AI tools and what they produced} & \textbf{Human review} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{@{}l}{\small\itshape Table~\thetable\ continued}\\
+\toprule
+\textbf{Deliverable} & \textbf{AI tools and what they produced} & \textbf{Human review} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Design document: this file, \code{architecture.mmd}, inventory, claims trace, open items & Claude by Anthropic, used through Claude Code with model Opus 5.5, drafted the text, tables and diagram from the repository and data pack on 8 Nov 2026, and updated them on 14 Nov 2026 & Tian Yujia, the owner, reviewed the content against the system \\
+System code: \code{app/}, \code{server.py}, \code{static/}, \code{scripts/} & Claude, through Claude Code, wrote code including LLM generation and the Gemini/DeepSeek provider chain; the passwordless identities and Reset demo by Tian Yujia with Claude & Tian Yujia, demo system owner \\
+Agent prompts: \code{app/agents.py}, inline generation prompts & Claude, through Claude Code & Tian Yujia \\
+Runtime outputs: plan, register, reports, change analysis & DeepSeek at run time, with Gemini configured as primary but not used, validated by deterministic code & HC1--HC7 approvals by the role accounts, see Chapter~\ref{ch:checkpoints} \\
+Evaluation report & Updated by Claude, through Claude Code, on 14 Nov 2026 after re-running the harness; owner Qu Chengzhi & Qu Chengzhi \\
+Governance log & Updated by Claude, through Claude Code, on 14 Nov 2026 after regenerating the demonstration evidence; owner Huang Hao & Huang Hao \\
+Slides & Liu Beiqi; ChatGPT used to check the slides for errors & Liu Beiqi \\
+Demo video & Zhang Yinan & Zhang Yinan \\
+\end{longtable}
+}

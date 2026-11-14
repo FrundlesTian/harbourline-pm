@@ -1,0 +1,47 @@
+\chapter{Assumption register}
+\label{app:assumptions}
+
+\textbf{Seeding.} There is no standalone assumption file. The register is the Sponsor Question table:
+
+\begin{itemize}[leftmargin=*,itemsep=2pt]
+  \item Every question not answered by a source gets \texttt{ASSUMPTION A-nn: until the sponsor answers, plan treats this as unresolved\ldots} see \code{app/planning.py:513}.
+  \item Approved HC6 actions append event notes, for example ``(CE-01)'', see \code{app/change.py:420-427}.
+  \item The rows below are the \textbf{baseline} register GQ01--GQ20 from \code{app/planning.py:45-181}. In LLM mode the IDs and wording are regenerated on each fresh database; the live register is on the Planning page.
+  \item Rows marked \textbf{added} cover G01--G14 items that the baseline register does not hold as a question.
+\end{itemize}
+
+Owners are role accounts; owners and revisit triggers were adopted by the team lead.
+
+{\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.95cm}>{\raggedright\arraybackslash}p{3.45cm}>{\raggedright\arraybackslash}p{1.75cm}>{\raggedright\arraybackslash}p{2.5cm}>{\raggedright\arraybackslash}p{2.35cm}>{\raggedright\arraybackslash}p{1.7cm}>{\raggedright\arraybackslash}p{1.9cm}@{}}
+\caption{Baseline assumption register}\label{tab:assumptions}\\
+\toprule
+\textbf{ID} & \textbf{Assumption or open question} & \textbf{Sources} & \textbf{Sponsor answer} & \textbf{Impact} & \textbf{Owner} & \textbf{Revisit trigger} \\
+\midrule
+\endfirsthead
+\multicolumn{7}{@{}l}{\small\itshape Table~\thetable\ continued}\\
+\toprule
+\textbf{ID} & \textbf{Assumption or open question} & \textbf{Sources} & \textbf{Sponsor answer} & \textbf{Impact} & \textbf{Owner} & \textbf{Revisit trigger} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+A-01 & Fixed completion date: 22 months from possession vs fully open by Q4 2028 vs KHB 2028-12-31 vs D22 2028-10-31 & BRIEF-p3-5, EDC-4.1, DEL-D22, NRF-4.2 & SA-Q1 confirms possession from 4 Jan 2027; no single completion date given --- remains assumption & Schedule; NRF approval needed after 31 Dec 2028 & \code{project_manager} & Programme revision or NRF 4.2 request \\
+A-02 & Grant is 60\% of eligible cost capped at S\$17.0M, max S\$10.2M, not 60\% of S\$18.5M & BRIEF-p3-5, NRF-1.1, NRF-1.2, NRF-1.3 & Unanswered --- remains assumption & Council share above 40\% of the budget; derived: 18.5 $-$ 10.2 = S\$8.3M & Finance & Fund eligibility ruling, e.g.\ CE-01 \\
+A-03 & $\sim$S\$1.18M headroom is not yet contingency; drawdown authority undecided & EDC-1.1, EDC-1.2 & Unanswered --- remains assumption & Asbestos S\$0.35--0.60M would use 30--51\% of it & Finance & EDC decision on contingency \\
+A-04 & Childcare handover needed about 7 months before the Jan 2029 intake vs programme month 20 & BRIEF-p3-6, EDC-4.1, DEL-D21, LL-L04 & Unanswered --- remains assumption & Childcare opening and T3/T4 timing & \code{project_manager} & Operator licensing plan \\
+A-05 & No closures are agreed; east-core closure would break barrier-free access to L3--4 & BRIEF-p3-6, EDC-3.1, NRF-5.1 & SA-Q3: no closures agreed; priority is the sponsor's & 6--8 weeks delay if lift works slip, PR3-3 & Sponsor & Closure decision at EDC \\
+A-06 & Active ageing operator appointed by Council; EOI needs 3 responses, has 1 & EDC-4.4, DEL-D14 & SA-Q2: Council appoints; no confirmed date & Tranche 2 needs ALL operator agreements, NRF-T2 & Community Engagement & EOI close 2027-04-30 or CE-02 \\
+A-07 & Asbestos removal eligibility unknown & EDC-5.1, EDC-6.5, PR3-4 & Unanswered --- remains assumption; CE-01 rules it ineligible if that event applies & Council exposure 40--100\% of S\$0.35--0.60M, W1 & Finance & Fund ruling \\
+A-08 & Rooftop garden kept or deferred; garden ineligible; slab strengthening unpriced & NRF-1.3, EDC-5.2, EDC-6.3 & Unanswered --- remains assumption & Cost NOT FOUND; W3 & Sponsor & EDC vote \\
+A-09, added & EDC cadence: weekly in the brief vs fortnightly from February with alternate-week written updates & BRIEF-p3-7, EDC-1.6, EDC-2.3 & Unanswered --- remains assumption & Reporting calendar for the EDC update & \code{project_manager} & Next EDC terms of reference \\
+A-10, added & Monthly NRF report due by the 10th working day; February report was late; a second late report risks suspension & NRF-3.1, NRF-3.3, DEL-D09 & Not a sponsor question; data pack rule & Tranche suspension & \code{group_leader} & Each monthly deadline \\
+A-11, added & KHB ``broadly on programme'' is treated as a claim, not a status; figures show $-$2.5\% physical, $-$9\% design & PR3-1, PR3-2 & n/a & Reports must attribute the wording to KHB, Critic C6 & \code{group_leader} & Each contractor report \\
+A-12, added & Seed register defects are repaired, not inherited: R01 owner left, R03/R04 duplicate, R06 score error, R08 closed but realised, R11 no owner & RISK-R01, RISK-R03, RISK-R04, RISK-R06, RISK-R08, RISK-R11 & n/a & Register accuracy & \code{group_leader} & HC4 \\
+A-13, added & Deliverables schedule data defects are flagged, not corrected: mixed date formats, D06 no due date, D20 no actual date, D14 no owner & DEL-D03, DEL-D06, DEL-D10, DEL-D14, DEL-D20 & n/a & Milestone dates; T2 owner & \code{project_manager} & Next schedule issue from KHB \\
+A-14, added & Values the pack does not contain stay NOT FOUND: Finance Manager funding figures, temporary lift price, roof strengthening cost, garden cost, energy target & EDC-3.5, EDC-3.2, EDC-5.2, BRIEF-p3-3 & Unanswered --- remains assumption & What-ifs W2/W3 show NOT FOUND & Finance & Sponsor provides figures \\
+\end{longtable}
+}
+
+\noindent{\itshape Full baseline GQ01--GQ20 register, with status, sponsor answer and assumption: \code{docs/design/evidence/sponsor_questions_register_baseline.csv}. Its \code{gaps_hash} is \code{072aec9495dc}, the hash approved at HC1 in the demonstration run. Only Round 1 sponsor answers exist in the data pack, in \code{data_pack/00_Sponsor_Answers_Round1.txt}.}

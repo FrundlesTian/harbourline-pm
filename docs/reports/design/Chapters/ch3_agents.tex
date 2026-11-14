@@ -1,0 +1,151 @@
+\chapter{Agent cards}
+\label{ch:agents}
+
+Role and Context are fixed in \code{app/agents.py:9-91}; Appendix~\ref{app:prompts} gives the full text. \textbf{Model for every LLM call:} Gemini \code{gemini-2.5-flash} by default, set by the team in \code{.env} and read in \code{app/config.py:33}, with DeepSeek \code{deepseek-chat} as backup, see \code{app/config.py:42}; temperature 0.0, see \code{app/llm.py:66}. The Gemini path is tested only against a local stub; every LLM run the team made used DeepSeek, whose use the course instructor has accepted according to a team statement of 14 Nov 2026.
+
+Tables~\ref{tab:card-planning}--\ref{tab:card-governance} give one card per agent module and one for the governance layer.
+
+\section{Planning Agent}
+\begin{table}[H]
+\centering\footnotesize
+\caption{Agent card: 1 Planning Agent}
+\label{tab:card-planning}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.9cm}L}
+\toprule
+\textbf{Role prompt} & \code{app/agents.py:10-21}; generation prompts \code{app/planning.py:327-474} \\
+\textbf{Inputs} & Brief chunks, sponsor answers, NRF, EDC, DEL, LL chunks; fact store \\
+\textbf{Outputs} & Scope lines SC/OS; Sponsor Questions GQnn with status, answer and assumption; conflict register CF01--CF12; WBS to L3 with dictionary; flagged elements; milestones MSnn with dependencies \\
+\textbf{Tools/APIs} & LLM returning JSON; validators; deterministic conflict detectors \\
+\textbf{Stop condition} & Generated plan rejected if $<$8 scope lines, $<$10 Sponsor Questions, L1$<$4 or L3$<$25, or $<$8 milestones; \code{app/planning.py:373-376}, \code{416-417}, \code{472-473} \\
+\textbf{Failure behaviour} & If the answer stops after the scope, the Sponsor Question register is requested once more on its own, \code{app/planning.py:344-347}. Otherwise falls back to baseline tables; the reason is shown on Overview and in audit as \texttt{output generated (baseline)}, outcome \code{fallback}, \code{app/gen.py:61-66}. The optional extra-gaps call is cached like every other call, \code{app/planning.py:296} \\
+\textbf{Evidence} & Eval T01--T05 in \code{eval/results/latest.md}; LLM-mode log \code{docs/evaluation/evidence/eval_llm_deepseek_2026-11-14_final.log} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Tool Integration Agent}
+\begin{table}[H]
+\centering\footnotesize
+\caption{Agent card: 2 Tool Integration Agent}
+\label{tab:card-tool}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.9cm}L}
+\toprule
+\textbf{Role prompt} & \code{app/agents.py:22-30} --- ``Deterministic agent - no LLM'' \\
+\textbf{Inputs} & HC2-approved WBS + milestones; HC6-approved change actions \\
+\textbf{Outputs} & Preview listing create/update/unchanged with a \code{preview_id}; PM issues; read-back report \\
+\textbf{Tools/APIs} & Jira Cloud REST v3, see Chapter~\ref{ch:datacontract}, or the mock board, both behind \code{Guarded}, \code{app/pmtool.py:343-390} \\
+\textbf{Stop condition} & No write without HC2 for the current plan hash and HC3 for the preview; \code{app/pmtool.py:485-486}, \code{528-531} \\
+\textbf{Failure behaviour} & Refusal returned and logged \texttt{pm sync refused} with outcome blocked; Jira errors 401/403/404 surface with a hint and the token redacted, \code{app/pmtool.py:151-172} \\
+\textbf{Evidence} & Eval T21--T23, T30 on the mock board \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Memory \& Retrieval Agent}
+\begin{table}[H]
+\centering\footnotesize
+\caption{Agent card: 3 Memory \& Retrieval Agent}
+\label{tab:card-memory}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.9cm}L}
+\toprule
+\textbf{Role prompt} & \code{app/agents.py:31-40} \\
+\textbf{Inputs} & Question; BM25 top hits; decision log DL-nnn \\
+\textbf{Outputs} & Answer with document + line citations, or NOT FOUND with reason; conflict notes; \code{qa_log} row \\
+\textbf{Tools/APIs} & BM25 \parencite{robertson2009bm25}, \code{app/sources.py:294-332}; optional LLM synthesis \\
+\textbf{Stop condition} & Deterministic sufficiency test: top score $<$2.5, key-term coverage $<$70\%, or no value where one is asked $\rightarrow$ NOT FOUND; \code{app/memory.py:76-87} \\
+\textbf{Failure behaviour} & An LLM answer with an unknown citation or untraceable number is rejected and logged; the extractive answer is used instead, \code{app/memory.py:105-122} \\
+\textbf{Evidence} & Eval T06--T15 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Risk \& What-if Agent}
+\begin{table}[H]
+\centering\footnotesize
+\caption{Agent card: 4 Risk \& What-if Agent}
+\label{tab:card-risk}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.9cm}L}
+\toprule
+\textbf{Role prompt} & \code{app/agents.py:41-51}; generation prompt \code{app/risk.py:173-202} \\
+\textbf{Inputs} & Seed register RISK-Rnn, pack chunks, WBS hand-off, conflicts \\
+\textbf{Outputs} & Register with L$\times$I, owner, trigger, mitigation, WBS links and sources; seed QA findings; what-ifs W1--W3, plus W4 for CE-02 \\
+\textbf{Tools/APIs} & LLM returning JSON; validators; deterministic seed QA and what-if arithmetic, \code{app/risk.py:110-126}, \code{301-381} \\
+\textbf{Stop condition} & A risk is dropped if L or I is outside 1--5, it has no valid WBS link, no known source, no owner or trigger, or if a number or date in its description or trigger is not stated by its cited sources after one revision round, \code{app/risk.py:129-170}. The register is rejected if it has $<$12 valid risks, \code{app/risk.py:214-227} \\
+\textbf{Failure behaviour} & Baseline register used; reason logged. A missing vendor-change risk is added by the validator, \code{app/risk.py:228-234} \\
+\textbf{Evidence} & Eval T16, T17 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Reporting Agent}
+\begin{table}[H]
+\centering\footnotesize
+\caption{Agent card: 5 Reporting Agent}
+\label{tab:card-reporting}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.9cm}L}
+\toprule
+\textbf{Role prompt} & \code{app/agents.py:52-62}; report prompt \code{app/reporting.py:161-194} \\
+\textbf{Inputs} & One fact sheet of facts with quotes, conflicts, change events, NRF/DEL chunks; top-5 risks inserted from the register, \code{app/reporting.py:197-218} \\
+\textbf{Outputs} & EDC exception update and NRF monthly report, each with a claim list of text, cites and calc \\
+\textbf{Tools/APIs} & LLM returning JSON; Critic; line templates, \code{app/reporting.py:67-125} \\
+\textbf{Stop condition} & Draft only --- cannot release; hands to Critic automatically, \code{app/reporting.py:285-287} \\
+\textbf{Failure behaviour} & Still STOPPED after 3 revisions $\rightarrow$ template draft used and logged \texttt{generated draft rejected - template fallback}, \code{app/reporting.py:249-255} \\
+\textbf{Evidence} & Eval T18, T25 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Critic Agent}
+\begin{table}[H]
+\centering\footnotesize
+\caption{Agent card: 5 Critic Agent}
+\label{tab:card-critic}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.9cm}L}
+\toprule
+\textbf{Role prompt} & \code{app/agents.py:63-71} --- ``Deterministic agent - no LLM'' \\
+\textbf{Inputs} & Draft sections, claims, rendered content \\
+\textbf{Outputs} & Findings with rule, severity and detail; report status \code{critic_passed} or \code{critic_stopped} \\
+\textbf{Tools/APIs} & Number/date/person tracer with a safe formula evaluator, \code{app/critic.py:62-120} \\
+\textbf{Blocker rule} & Any finding of severity STOP blocks release: C1 untraceable number/date/person or uncited claim; C3 missing required section; C4 top five $\neq$ register; C5 superseded fact or unreflected change event; C6 banned status phrase such as ``on track'' or ``on programme'' unless attributed to KHB; C7 conflict line with $<$2 sources; C8 NRF report without NOT FOUND; \code{app/critic.py:123-169} \\
+\textbf{Max revision loops} & \textbf{3} for generated report drafts, \texttt{MAX\_REVISIONS = 3} in \code{app/reporting.py:151}; \textbf{1} for generated change cost lines and for generated risks, after which untraceable lines or risks are dropped, \code{app/change.py:165-178}, \code{app/risk.py:137-163}; \textbf{0} for template and planted-fault drafts \\
+\textbf{Failure behaviour} & A STOPPED report is stored with its findings; HC5 release is refused, \code{app/reporting.py:291-298} \\
+\textbf{Evidence} & Eval T19 with 21/21 planted faults, T20, T28 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Change Agent}
+\begin{table}[H]
+\centering\footnotesize
+\caption{Agent card: 6 Change Agent}
+\label{tab:card-change}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.9cm}L}
+\toprule
+\textbf{Role prompt} & \code{app/agents.py:72-81}; analysis prompt \code{app/change.py:130-158} \\
+\textbf{Inputs} & Event JSON \code{change_events/CE-01.json}, \code{CE-02.json}; tags of every stored output \\
+\textbf{Outputs} & Stale list; Change Impact Note with cost/time, sponsor decisions and UNRESOLVED items; auto-refreshed what-ifs and reports; pending HC6 actions \\
+\textbf{Tools/APIs} & Deterministic tag matching + milestone dependency walk, \code{app/change.py:38-58}, \code{248-282}; LLM analysis; Critic tracer \\
+\textbf{Stop condition} & Never edits baseline, closes or deletes; analysis rejected if $<$2 traced cost lines or $<$2 sourced decisions, \code{app/change.py:208-221} \\
+\textbf{Failure behaviour} & Baseline CE-01/CE-02 analysis used, \code{app/change.py:65-125}; rejected cost lines logged \texttt{reject generated cost line}. If affected risks exist but no valid re-score is proposed, the agent is asked once for re-scores only, \code{app/change.py:179-188} \\
+\textbf{Evidence} & Eval T24--T28 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Governance layer}
+\begin{table}[H]
+\centering\footnotesize
+\caption{Card: governance layer}
+\label{tab:card-governance}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.9cm}L}
+\toprule
+\textbf{Role prompt} & \code{app/agents.py:82-90} --- deterministic \\
+\textbf{Inputs} & Every agent write and approval; \code{05_Resident_consultation_responses.csv} \\
+\textbf{Outputs} & \code{audit_log}, \code{approvals}, CSV exports; bias report B1--B6 with actions \\
+\textbf{Tools/APIs} & SQLite; theme lexicon en/zh/ms/ta, \code{app/governance.py:9-41} \\
+\textbf{Stop condition} & Bias check status ``awaiting HC7'' until signed off, \code{app/governance.py:100-112} \\
+\textbf{Failure behaviour} & An unknown checkpoint, unnamed approver or invalid decision raises an error, \code{app/audit.py:60-66} \\
+\textbf{Evidence} & Eval T20, T23, T29, T30 \\
+\bottomrule
+\end{tabularx}
+\end{table}

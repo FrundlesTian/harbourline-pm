@@ -1,0 +1,17 @@
+# LaTeX build files (keep main.pdf)
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.log
+*.lot
+*.mis
+*.out
+*.run.xml
+*.toc
+*.nlo
+*.xdv
+*-SAVE-ERROR

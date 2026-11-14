@@ -1,0 +1,40 @@
+\chapter{Results of the five measures}
+\label{ch:measures}
+
+Table~\ref{tab:measures} gives the definition, target and result of each measure in both modes; Figure~\ref{fig:measures} compares the percentage measures with their targets.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\caption{The five measures: definition, target and results in both modes}
+\label{tab:measures}
+\begin{tabularx}{\textwidth}{@{}p{0.3cm}>{\raggedright\arraybackslash}p{1.6cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{1.5cm}>{\raggedright\arraybackslash}p{2.4cm}>{\raggedright\arraybackslash}p{3.3cm}@{}}
+\toprule
+\textbf{\#} & \textbf{Measure} & \textbf{Definition} & \textbf{Target} & \textbf{Baseline} & \textbf{LLM mode} \\
+\midrule
+1 & \textbf{Gap recall} & Share of the 22 gold brief gaps that appear unprompted in the Sponsor Question register or the conflict register, matched by keyword groups & $\geq 80\%$ & \textbf{91\%}, 20 of 22 & \textbf{82\%}, 18 of 22 \\
+\addlinespace
+2 & \textbf{Invention rate} & Share of sampled stakeholder-facing claims in reports, risk register and change note that the Critic tracer cannot trace to their cited sources & $\leq 5\%$ & \textbf{0.0\%}, 0 of 75 & \textbf{0.0\%}, 0 of 92 \\
+\addlinespace
+3 & \textbf{Re-run stability} & a) two fresh databases give identical plan, register, gaps and reports; b) a second PM sync creates and updates nothing; c) no duplicates & identical; 0 / 0 / 0 & a) identical on all four; b) 0 created, 0 updated, 92 unchanged; c) none & a) \textbf{not identical} across fresh databases; b) 0 created, 0 updated, 111 unchanged; c) none. Re-runs on the same database are identical, T33 \\
+\addlinespace
+4 & \textbf{Critic catch rate} & Share of planted faults that end \code{critic_stopped} & $\geq 90\%$ & \textbf{100\%}, 21 of 21 & \textbf{100\%}, 21 of 21 \\
+\addlinespace
+5 & \textbf{Cost and time per full run} & Mean of two full runs on fresh databases: seconds, tokens, US\$ & Free route available & \textbf{0.055\,s, 0 tokens, US\$0} & \textbf{92.5\,s, 79,812 tokens, US\$0.026}; a re-run on the same database costs 0 tokens because responses are cached \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\input{fig/measures}
+\caption{Percentage measures in both modes, 14 November 2026 runs. Black dashes mark the targets: at least 80\% gap recall, at most 5\% invention rate and at least 90\% Critic catch rate; the pass rate has no target}
+\label{fig:measures}
+\end{figure}
+
+\section{Overall}
+\textbf{Baseline: 34 of 34 pass. LLM mode: 34 of 34 pass.}
+
+\section{Gap recall in LLM mode varies between runs}
+Three LLM-mode runs on 14 November 2026 in which the plan was generated gave 82\%, 77\% and 82\%. The 77\% run is \code{eval_llm_deepseek_2026-11-14_run3.log}. The 80\% target is the team's own; the course instructor later confirmed a lower threshold, which every run meets, according to the team. Design limitation L1 records this.

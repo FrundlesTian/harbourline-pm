@@ -1,0 +1,47 @@
+\chapter{Governance, responsible AI and free-tier compliance}
+\label{ch:governance}
+
+This chapter covers the audit trail, the guardrails, token hygiene, the bias and fairness check and the tools used, which together are the system's responsible-AI controls \parencite[cf.][]{nist2023airmf}.
+
+\section{Audit log}
+
+The table \texttt{audit\_log(id, ts, run\_id, actor, actor\_type agent|human|system, action, target\_type, target\_id, outcome ok|blocked|rejected|fallback|error, detail JSON)} is defined at \code{app/db.py:61-64} and written by \code{audit.log} in \code{app/audit.py:43-49}. Approvals and hand-offs have their own tables. Audit and approvals export as CSV, and each export is itself logged, see \code{server.py:432-442}. Nothing in the application deletes \code{audit_log} rows.
+
+\textbf{Reset demo outputs}, an admin-only action on the Overview page, keeps approvals and the decision log, see \code{app/pipeline.py:72-80}. \textbf{Reset demo} on the start screen clears approvals and decisions as well but keeps \code{audit_log}, which already mirrors every approval, see \code{app/pipeline.py:83-100}. Export the approvals CSV before a reset if the table itself is needed. Eval T30 found 92 PM write rows for 92 issues and no unnamed approvals.
+
+\section{Guardrails}
+
+There is one project key, and agent search is scoped to the project + \code{ai-generated}, see \code{app/pmtool.py:319-320}. The label is enforced on every create at \code{:357-358}. Agents never move items to Done, close or delete them, as Chapter~\ref{ch:checkpoints} sets out. Unknown API paths default to the most restrictive permission in \code{server.py:370-378}, except the start-screen calls \code{/api/identities}, \code{/api/reset/preview} and \code{/api/reset/restore}, which are answered before any session check in \code{server.py:408-415}. Generated IDs, scores, dates and numbers are validated before storage, as the agent cards in Chapter~\ref{ch:agents} show.
+
+\section{Token hygiene}
+
+Keys come only from the environment or a git-ignored \code{.env}, see \code{app/config.py:13-24}; \code{.env.example} holds no values. \code{audit.redact} masks token patterns before logging, see \code{app/audit.py:33-40}. The Jira health check returns \code{token_set} as a boolean only, see \code{app/pmtool.py:599-612}. LLM keys travel only in the request header, see \code{app/llm.py:84-91}. A history scan found no committed credential.
+
+\section{Bias and fairness check}
+
+The check is implemented in \code{app/governance.py:43-107}. The 214 consultation responses are theme-tagged in four languages; raw theme ranks are compared with age-re-weighted and English-only ranks, and channel, age and language skew is reported as findings B1--B6. Residents 65+ are under-represented, an English-only summary would drop most active-ageing and lift comments, and re-weighting changes the top-four order, as eval T29 checks. Five actions follow, including holding the summary D15 for HC7.
+
+\textbf{What changed as a result:} at HC7 the team approved and carried out the actions except the most critical one, the second consultation round for residents 55+, which was not approved; Governance Log \S3 gives the detail.
+
+\section{Tools and free tiers}
+
+Table~\ref{tab:tools} lists each tool, its tier and its status under the brief.
+
+\begin{table}[htbp]
+\centering\footnotesize
+\caption{Tools, free tiers and brief status}
+\label{tab:tools}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.3cm}>{\raggedright\arraybackslash}p{2.5cm}>{\raggedright\arraybackslash}p{3.6cm}L}
+\toprule
+\textbf{Tool} & \textbf{Used for} & \textbf{Tier / cost} & \textbf{Brief status} \\
+\midrule
+Gemini via Google AI Studio, \code{gemini-2.5-flash}, configurable & Primary LLM for all generation & Free tier; price set to 0 in \code{app/config.py:37-38} & Permitted, L210--L212 \\
+DeepSeek \code{deepseek-chat} & Backup LLM, used only when Gemini fails & Pay-per-token; about US\$0.026 per full fresh run, measured in the LLM-mode evaluation of 14 Nov 2026 & Not on the brief's list, L210--L212; \textbf{use accepted by the course instructor} according to the team. It can be switched off with \code{HCH_LLM_ORDER=gemini}; every required feature also runs in baseline mode at 0 tokens, see \code{eval/results/latest.md} \\
+Jira Cloud, the team's own site, project \code{SCRUM} & PM tool & Free plan & Recommended, L232 \\
+Python 3 stdlib, SQLite, vanilla JS & Code, storage, UI & Free & Permitted ``with code or without it'', L205 \\
+OpenAI Agent Builder / ChatGPT agent mode & Not used & --- & Prohibited, L239--L240; no such dependency \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The vendor-change risk is logged: R23 in the baseline, and enforced by the validator in generated registers, see \code{app/risk.py:104-106} and \code{228-234}. The team re-checked the Gemini, DeepSeek and Jira terms in Week 12 and, according to a team statement of 14 Nov 2026, found no change that affects the project.
