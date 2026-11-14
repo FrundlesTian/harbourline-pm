@@ -1,7 +1,7 @@
 \chapter{Scope and sources of the records}
 \label{ch:scope}
 
-This Governance Log belongs to the Harbourline AI PM system of MA6094 Capstone Group 5. It is dated 14 November 2026 and is a draft for team review. The governance owner is Huang Hao, G2510626K; the team lead is Tian Yujia, G2510505D.
+This Governance Log belongs to the Harbourline AI PM system of MA6094 Capstone Group 5. It is dated 14 November 2026. The governance owner is Huang Hao, G2510626K; the team lead is Tian Yujia, G2510505D.
 
 The system writes its governance records itself, into the SQLite tables \code{audit_log}, \code{approvals} and \code{handoffs}, see \code{app/db.py:58-64,81-83}. Keeping these records inside the system, rather than reconstructing them afterwards, follows the ``govern'' and ``map'' functions of AI risk management, which ask for documented accountability and traceable decisions \parencite{nist2023airmf}. Two kinds of record are reported here. Table~\ref{tab:sources} lists them, together with the team's real run on its Jira site.
 

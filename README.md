@@ -67,7 +67,8 @@ Results are saved to `eval/results/latest.md` and `eval/results/latest.json`. Ev
 
 ## 文档 / Documentation
 
-- [设计与架构 / Design and architecture](docs/design/design_document.md)
-- [评估报告 / Evaluation report](docs/evaluation/evaluation_report.md)
-- [治理日志 / Governance log](docs/governance/governance_log.md)
-- PDF 报告 / PDF reports (NTU template, LuaLaTeX): [design](docs/reports/design/main.pdf), [evaluation](docs/reports/evaluation/main.pdf), [governance](docs/reports/governance/main.pdf). 重新编译 / Rebuild: `cd docs/reports/<part> && latexmk -lualatex main.tex`
+- [设计文档 / Design Document](docs/reports/design/main.pdf)
+- [评估报告 / Evaluation Report](docs/reports/evaluation/main.pdf)
+- [治理日志 / Governance Log](docs/reports/governance/main.pdf)
+
+重新编译 / Rebuild (LuaLaTeX): `cd docs/reports/<design|evaluation|governance> && latexmk -lualatex main.tex`
